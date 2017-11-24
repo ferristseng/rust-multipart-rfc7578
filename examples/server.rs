@@ -1,4 +1,4 @@
-// Copyright 2017 rust-ipfs-api Developers
+// Copyright 2017 rust-hyper-multipart-rfc7578 Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
@@ -14,6 +14,7 @@ use futures::stream::Stream;
 use hyper::StatusCode;
 use hyper::server::{Http, Service, Request, Response};
 
+
 struct Debug;
 
 impl Service for Debug {
@@ -24,7 +25,6 @@ impl Service for Debug {
     type Error = hyper::Error;
 
     type Future = Box<Future<Item = Response, Error = hyper::Error>>;
-
 
     fn call(&self, req: Request) -> Self::Future {
         println!("{:?}", req);
@@ -40,11 +40,11 @@ impl Service for Debug {
 }
 
 
-/// This example runs a server on the default Ipfs port. All it does is
-/// print requests as it gets them. It is useful for debugging.
+/// This example runs a server that prints requests as it receives them.
+/// It is useful for debugging.
 ///
 fn main() {
-    let addr = "127.0.0.1:5001".parse().unwrap();
+    let addr = "127.0.0.1:9001".parse().unwrap();
     let mut server = Http::new().bind(&addr, || Ok(Debug)).unwrap();
 
     server.no_proto();
