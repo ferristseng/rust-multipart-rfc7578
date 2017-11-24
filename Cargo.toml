@@ -1,0 +1,9 @@
+[package]
+name              = "hyper-multipart-rfc7578"
+version           = "0.1.0"
+license           = "MIT OR Apache-2.0"
+authors           = ["Ferris Tseng <ferristseng@fastmail.fm>"]
+
+[dependencies]
+bytes             = "0.4"
+hyper             = "0.11"
