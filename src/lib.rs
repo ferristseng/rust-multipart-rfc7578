@@ -7,13 +7,14 @@
 //
 
 extern crate bytes;
+extern crate futures;
 extern crate hyper;
+extern crate rand;
 
+mod client_;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+pub mod client {
+    pub mod multipart {
+        pub use client_::{Body, Form, Part, BoundaryGenerator};
     }
 }
