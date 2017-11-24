@@ -10,11 +10,38 @@ extern crate bytes;
 extern crate futures;
 extern crate hyper;
 extern crate rand;
+extern crate tokio_core;
 
 mod client_;
 
 pub mod client {
     pub mod multipart {
         pub use client_::{Body, Form, Part, BoundaryGenerator};
+    }
+
+    use hyper::client::{Client, Config, HttpConnector};
+    use tokio_core::reactor::Handle;
+
+    /// Creates a hyper client with a multipart body.
+    ///
+    /// ```
+    /// # extern crate hyper_multipart_rfc7578;
+    /// # extern crate hyper;
+    /// # extern crate tokio_core;
+    /// #
+    /// use hyper_multipart_rfc7578::client::{self, multipart};
+    /// use hyper::client::{Client, HttpConnector};
+    /// use tokio_core::reactor::{Core, Handle};
+    ///
+    /// # fn main() {
+    /// let core = Core::new().unwrap();
+    /// let client: Client<HttpConnector, multipart::Body> = client::create(&core.handle());
+    /// # }
+    /// ```
+    ///
+    pub fn create(handle: &Handle) -> Client<HttpConnector, multipart::Body> {
+        Config::default()
+            .body::<multipart::Body>()
+            .build(handle)
     }
 }
