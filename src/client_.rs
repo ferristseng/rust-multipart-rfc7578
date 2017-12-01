@@ -78,6 +78,10 @@ impl Body {
         write.write_all(self.boundary.as_bytes())
     }
 
+    /// Writes the last form boundary.
+    ///
+    /// [See](https://tools.ietf.org/html/rfc2046#section-5.1).
+    ///
     fn write_final_boundary<W>(&self, write: &mut W) -> io::Result<()>
     where
         W: Write,
@@ -110,6 +114,8 @@ impl Stream for Body {
 
     type Error = hyper::Error;
 
+    /// Iterate over each form part, and write it out.
+    ///
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         let bytes = BytesMut::with_capacity(self.buf_size);
         let mut writer = bytes.writer();
@@ -196,6 +202,23 @@ impl Default for Form {
 impl Form {
     /// Creates a new form with the specified boundary generator function.
     ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use hyper_multipart_rfc7578::client::multipart;
+    /// # use hyper_multipart_rfc7578::client::multipart::BoundaryGenerator;
+    /// #
+    /// struct TestGenerator;
+    ///
+    /// impl BoundaryGenerator for TestGenerator {
+    ///     fn generate_boundary() -> String {
+    ///         "test".to_string()
+    ///     }
+    /// }
+    ///
+    /// let form = multipart::Form::new::<TestGenerator>();
+    /// ```
+    ///
     #[inline]
     pub fn new<G>() -> Form
     where
@@ -209,6 +232,25 @@ impl Form {
 
     /// Updates a request instance with the multipart Content-Type header
     /// and the payload data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate hyper_multipart_rfc7578;
+    /// #
+    /// use hyper::{Method, Request, Uri};
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// # fn main() {
+    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
+    /// let mut req: Request<multipart::Body> = Request::new(Method::Post, url);
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// form.set_body(&mut req);
+    /// # }
+    /// ```
     ///
     pub fn set_body(self, req: &mut Request<Body>) {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
@@ -224,7 +266,45 @@ impl Form {
         req.set_body(self);
     }
 
-    /// Adds a struct that implements Read.
+    /// Adds a text part to the Form.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// form.add_text("more", String::from("Hello Universe!"));
+    /// ```
+    ///
+    pub fn add_text<N, T>(&mut self, name: N, text: T)
+    where
+        N: Into<String>,
+        T: Into<String>,
+    {
+        self.parts.push(Part::new::<_, String>(
+            Inner::Text(text.into()),
+            name,
+            None,
+            None,
+        ))
+    }
+
+    /// Adds a readable part to the Form.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use std::io::Cursor;
+    ///
+    /// let bytes = Cursor::new("Hello World!");
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_reader("input", bytes);
+    /// ```
     ///
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
@@ -243,20 +323,57 @@ impl Form {
 
     /// Adds a file, and attempts to derive the mime type.
     ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_file("file", file!()).expect("file to exist");
+    /// ```
+    ///
     #[inline]
     pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
     where
         P: AsRef<Path>,
         F: Into<String>,
     {
-        self.add_file_with_mime(name, path, None)
+        self._add_file(name, path, None)
     }
 
     /// Adds a file with the specified mime type to the form.
     /// If the mime type isn't specified, a mime type will try to
     /// be derived.
     ///
-    fn add_file_with_mime<P, F>(&mut self, name: F, path: P, mime: Option<Mime>) -> io::Result<()>
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate hyper_multipart_rfc7578;
+    /// #
+    /// use hyper::mime;
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// # fn main() {
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_file_with_mime("data", "test.csv", mime::TEXT_CSV);
+    /// # }
+    /// ```
+    ///
+    #[inline]
+    pub fn add_file_with_mime<P, F>(&mut self, name: F, path: P, mime: Mime) -> io::Result<()>
+    where
+        P: AsRef<Path>,
+        F: Into<String>,
+    {
+        self._add_file(name, path, Some(mime))
+    }
+
+    /// Internal method for adding a file part to the form.
+    ///
+    fn _add_file<P, F>(&mut self, name: F, path: P, mime: Option<Mime>) -> io::Result<()>
     where
         P: AsRef<Path>,
         F: Into<String>,
@@ -301,6 +418,8 @@ impl Form {
 }
 
 impl Into<Body> for Form {
+    /// Turns a `Form` into a multipart `Body`.
+    ///
     #[inline]
     fn into(self) -> Body {
         Body {
@@ -313,6 +432,10 @@ impl Into<Body> for Form {
 }
 
 
+/// One part of a body delimited by a boundary line.
+///
+/// [See RFC2046 5.1](https://tools.ietf.org/html/rfc2046#section-5.1).
+///
 pub struct Part {
     inner: Inner,
 
@@ -421,6 +544,23 @@ impl Inner {
 /// A BoundaryGenerator is a policy to generate a random string to use
 /// as a part boundary.
 ///
+/// The default generator will build a random string of 6 ascii characters.
+/// If you need more complexity, you can implement this, and use it with
+/// [`Form::new`](/hyper_multipart_rfc7578/client/multipart/struct.Form.html#method.new).
+///
+/// # Examples
+///
+/// ```
+/// use hyper_multipart_rfc7578::client::multipart::BoundaryGenerator;
+///
+/// struct TestGenerator;
+///
+/// impl BoundaryGenerator for TestGenerator {
+///     fn generate_boundary() -> String {
+///         "test".to_string()
+///     }
+/// }
+/// ```
 pub trait BoundaryGenerator {
     /// Generates a String to use as a boundary.
     ///
