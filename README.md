@@ -2,7 +2,7 @@
 
 [![Travis](https://img.shields.io/travis/ferristseng/rust-hyper-multipart-rfc7578.svg)](https://travis-ci.org/ferristseng/rust-hyper-multipart-rfc7578)
 [![Crates.io](https://img.shields.io/crates/v/hyper-multipart-rfc7578.svg)](https://crates.io/crates/hyper-multipart-rfc7578)
-[![Docs.rs](https://docs.rs/hyper-multipart-rfc7578/badge.svg)](https://docs.rs/hyper-multipart-rfc7578/0.1.0-alpha/hyper_multipart_rfc7578/)
+[![Docs.rs](https://docs.rs/hyper-multipart-rfc7578/badge.svg)](https://docs.rs/hyper-multipart-rfc7578/)
 
 This crate contains an implementation of the multipart/form-data media type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for hyper.
 
