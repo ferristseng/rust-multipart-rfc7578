@@ -11,7 +11,7 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-hyper-multipart-rfc7578 = "0.1"
+hyper-multipart-rfc7578 = "0.1-alpha"
 ```
 
 Because the name of this library is really wordy, I recommend shortening it:
