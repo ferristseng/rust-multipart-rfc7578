@@ -1,6 +1,6 @@
 ## Rust Hyper Multipart (RFC 7578)
 
-[![Travis](https://img.shields.io/ferristseng/rust-hyper-multipart-rfc7578/rust.svg)](Travis)
+![Travis](https://img.shields.io/ferristseng/rust-hyper-multipart-rfc7578/rust.svg)
 
 This crate contains an implementation of the multipart/form-data media type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for hyper.
 
