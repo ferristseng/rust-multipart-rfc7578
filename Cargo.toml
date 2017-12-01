@@ -1,6 +1,6 @@
 [package]
 name              = "hyper-multipart-rfc7578"
-version           = "0.1.0"
+version           = "0.1.0-alpha"
 license           = "MIT OR Apache-2.0"
 authors           = ["Ferris Tseng <ferristseng@fastmail.fm>"]
 
@@ -10,3 +10,6 @@ futures           = "0.1"
 hyper             = "0.11"
 rand              = "0.3"
 tokio-core        = "0.1"
+
+[dev-dependencies]
+hyper-tls         = "0.1"
