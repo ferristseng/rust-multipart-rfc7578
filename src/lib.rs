@@ -13,7 +13,7 @@
 //!
 //! Currently, only the client-side is implemented.
 //!
-//! See the [`client`](http://localhost:8000/hyper_multipart_rfc7578/client/index.html)
+//! See the [`client`](/hyper_multipart_rfc7578/client/index.html)
 //! module for examples of how to send a request with a multipart/form-data
 //! body.
 //!
