@@ -6,18 +6,46 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-//! # Multipart RFC 7578
-//!
 //! This crate contains an implementation of the multipart/form-data media
-//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578).
+//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for
+//! hyper.
 //!
 //! Currently, only the client-side is implemented.
 //!
-//! See the [`client`](/hyper_multipart_rfc7578/client/index.html)
-//! module for examples of how to send a request with a multipart/form-data
-//! body.
+//! ## Usage
 //!
-
+//! ```toml
+//! [dependencies]
+//! hyper-multipart-rfc7578 = "0.1.0-alpha2"
+//! ```
+//!
+//! Because the name of this library is really wordy, I recommend shortening it:
+//!
+//! ```rust
+//! extern hyper_multipart_rfc7578 as hyper_multipart;
+//! ```
+//!
+//! Using this requires a hyper client compatible with the `multipart::Body`
+//! data structure (see the documentation for more detailed examples):
+//!
+//! ```rust
+//! use hyper::{Method, Request};
+//! use hyper::client::Client;
+//! use hyper_multipart_rfc7578::client::{self, multipart};
+//! use tokio_core::reactor::{Core, Handle};
+//!
+//!
+//! let mut core = Core::new().unwrap();
+//! let client: Client<_, multipart::Body> = client::create(&core.handle());
+//! let mut req = Request::new(Method::Get, "http://localhost/upload".parse().unwrap());
+//! let mut form = multipart::Form::default();
+//!
+//! form.add_text("test", "Hello World");
+//! form.set_body(&mut req);
+//!
+//! core.run(client.request(req));
+//! ```
+//!
 extern crate bytes;
 extern crate futures;
 extern crate hyper;
