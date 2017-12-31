@@ -523,9 +523,9 @@ impl Inner {
     ///
     #[inline]
     fn default_content_type(&self) -> Mime {
-        match self {
-            &Inner::Read(_, _) => mime::APPLICATION_OCTET_STREAM,
-            &Inner::Text(_) => mime::TEXT_PLAIN,
+        match *self {
+            Inner::Read(_, _) => mime::APPLICATION_OCTET_STREAM,
+            Inner::Text(_) => mime::TEXT_PLAIN,
         }
     }
 
@@ -533,15 +533,15 @@ impl Inner {
     ///
     #[inline]
     fn len(&self) -> Option<u64> {
-        match self {
-            &Inner::Read(_, len) => len,
-            &Inner::Text(ref s) => Some(s.len() as u64),
+        match *self {
+            Inner::Read(_, len) => len,
+            Inner::Text(ref s) => Some(s.len() as u64),
         }
     }
 }
 
 
-/// A BoundaryGenerator is a policy to generate a random string to use
+/// A `BoundaryGenerator` is a policy to generate a random string to use
 /// as a part boundary.
 ///
 /// The default generator will build a random string of 6 ascii characters.
