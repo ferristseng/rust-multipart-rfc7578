@@ -34,7 +34,7 @@ fn main() {
 
     let mut req = Request::new(Method::Post, addr);
 
-    req.set_body(form);
+    form.set_body(&mut req);
 
     core.run(client.request(req)).unwrap();
 }
