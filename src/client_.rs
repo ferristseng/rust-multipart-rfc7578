@@ -255,13 +255,9 @@ impl Form {
     pub fn set_body(self, req: &mut Request<Body>) {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
-        {
-            let headers = req.headers_mut();
-
-            headers.set(ContentType(Mime::from_str(&header).expect(
-                "multipart mime type should parse",
-            )));
-        }
+        req.headers_mut().set(ContentType(Mime::from_str(&header).expect(
+            "multipart mime type should parse",
+        )));
 
         req.set_body(self);
     }
