@@ -12,8 +12,7 @@ extern crate hyper;
 use futures::future::Future;
 use futures::stream::Stream;
 use hyper::StatusCode;
-use hyper::server::{Http, Service, Request, Response};
-
+use hyper::server::{Http, Request, Response, Service};
 
 struct Debug;
 
@@ -38,7 +37,6 @@ impl Service for Debug {
         Box::new(res)
     }
 }
-
 
 /// This example runs a server that prints requests as it receives them.
 /// It is useful for debugging.

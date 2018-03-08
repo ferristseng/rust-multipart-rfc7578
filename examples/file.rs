@@ -15,7 +15,6 @@ use hyper::client::Client;
 use hyper_multipart::client::{self, multipart};
 use tokio_core::reactor::Core;
 
-
 fn main() {
     let addr = "http://127.0.0.1:9001".parse().unwrap();
     let mut core = Core::new().unwrap();
@@ -28,9 +27,8 @@ fn main() {
     let mut form = multipart::Form::default();
 
     form.add_text("filename", file!());
-    form.add_file("input", file!()).expect(
-        "source file path should exist",
-    );
+    form.add_file("input", file!())
+        .expect("source file path should exist");
 
     let mut req = Request::new(Method::Post, addr);
 

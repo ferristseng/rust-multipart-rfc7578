@@ -131,7 +131,7 @@ pub mod client {
     /// body to send a server.
     ///
     pub mod multipart {
-        pub use client_::{Body, Form, Part, BoundaryGenerator};
+        pub use client_::{Body, BoundaryGenerator, Form, Part};
     }
 
     use hyper::client::{Client, Config, HttpConnector};

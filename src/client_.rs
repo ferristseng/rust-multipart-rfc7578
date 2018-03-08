@@ -7,7 +7,7 @@
 //
 
 use bytes::{BufMut, BytesMut};
-use futures::{Poll, Async};
+use futures::{Async, Poll};
 use futures::stream::Stream;
 use hyper::{self, Request};
 use hyper::header::{ContentDisposition, ContentType, DispositionParam, DispositionType, Header};
@@ -22,7 +22,6 @@ use std::path::Path;
 use std::str::FromStr;
 use std::vec::IntoIter;
 
-
 /// Converts a hyper Header into a String.
 ///
 fn header_to_string<H>(header: &H) -> String
@@ -32,7 +31,6 @@ where
     format!("{}: {}", H::header_name(), header)
 }
 
-
 /// Writes a CLRF.
 ///
 fn write_crlf<W>(write: &mut W) -> io::Result<()>
@@ -41,7 +39,6 @@ where
 {
     write.write_all(&[b'\r', b'\n'])
 }
-
 
 /// Multipart body that is compatible with Hyper.
 ///
@@ -97,13 +94,9 @@ impl Body {
         W: Write,
     {
         write_crlf(write)?;
-        write.write_all(
-            header_to_string(&part.content_type).as_bytes(),
-        )?;
+        write.write_all(header_to_string(&part.content_type).as_bytes())?;
         write_crlf(write)?;
-        write.write_all(
-            header_to_string(&part.content_disposition).as_bytes(),
-        )?;
+        write.write_all(header_to_string(&part.content_disposition).as_bytes())?;
         write_crlf(write)?;
         write_crlf(write)
     }
@@ -173,7 +166,6 @@ impl Stream for Body {
         }
     }
 }
-
 
 /// Implements the multipart/form-data media type as described by
 /// RFC 7578.
@@ -255,9 +247,9 @@ impl Form {
     pub fn set_body(self, req: &mut Request<Body>) {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
-        req.headers_mut().set(ContentType(Mime::from_str(&header).expect(
-            "multipart mime type should parse",
-        )));
+        req.headers_mut().set(ContentType(
+            Mime::from_str(&header).expect("multipart mime type should parse"),
+        ));
 
         req.set_body(self);
     }
@@ -427,7 +419,6 @@ impl Into<Body> for Form {
     }
 }
 
-
 /// One part of a body delimited by a boundary line.
 ///
 /// [See RFC2046 5.1](https://tools.ietf.org/html/rfc2046#section-5.1).
@@ -492,7 +483,6 @@ impl Part {
     }
 }
 
-
 enum Inner {
     /// The `Read` variant captures multiple cases.
     ///
@@ -536,7 +526,6 @@ impl Inner {
     }
 }
 
-
 /// A `BoundaryGenerator` is a policy to generate a random string to use
 /// as a part boundary.
 ///
@@ -562,7 +551,6 @@ pub trait BoundaryGenerator {
     ///
     fn generate_boundary() -> String;
 }
-
 
 struct RandomAsciiGenerator;
 
