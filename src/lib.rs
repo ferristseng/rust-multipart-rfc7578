@@ -29,16 +29,16 @@
 //! data structure (see the documentation for more detailed examples):
 //!
 //! ```rust
-//! extern crate hyper;
-//! extern crate hyper_multipart_rfc7578;
-//! extern crate tokio_core;
+//! # extern crate hyper;
+//! # extern crate hyper_multipart_rfc7578;
+//! # extern crate tokio_core;
 //!
 //! use hyper::{Method, Request};
 //! use hyper::client::Client;
 //! use hyper_multipart_rfc7578::client::{self, multipart};
 //! use tokio_core::reactor::{Core, Handle};
 //!
-//!
+//! # fn main() {
 //! let mut core = Core::new().unwrap();
 //! let client: Client<_, multipart::Body> = client::create(&core.handle());
 //! let mut req = Request::new(Method::Get, "http://localhost/upload".parse().unwrap());
@@ -48,6 +48,7 @@
 //! form.set_body(&mut req);
 //!
 //! core.run(client.request(req));
+//! # }
 //! ```
 //!
 extern crate bytes;
