@@ -22,13 +22,17 @@
 //! Because the name of this library is really wordy, I recommend shortening it:
 //!
 //! ```rust
-//! extern hyper_multipart_rfc7578 as hyper_multipart;
+//! extern crate hyper_multipart_rfc7578 as hyper_multipart;
 //! ```
 //!
 //! Using this requires a hyper client compatible with the `multipart::Body`
 //! data structure (see the documentation for more detailed examples):
 //!
 //! ```rust
+//! # extern crate hyper;
+//! # extern crate hyper_multipart_rfc7578;
+//! # extern crate tokio_core;
+//! #
 //! use hyper::{Method, Request};
 //! use hyper::client::Client;
 //! use hyper_multipart_rfc7578::client::{self, multipart};
