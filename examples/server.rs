@@ -43,9 +43,7 @@ impl Service for Debug {
 ///
 fn main() {
     let addr = "127.0.0.1:9001".parse().unwrap();
-    let mut server = Http::new().bind(&addr, || Ok(Debug)).unwrap();
-
-    server.no_proto();
+    let server = Http::new().bind(&addr, || Ok(Debug)).unwrap();
 
     println!(
         "Listening on http://{} with 1 thread.",
