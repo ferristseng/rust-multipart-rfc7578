@@ -330,6 +330,72 @@ impl Form {
         self._add_file(name, path, None)
     }
 
+    /// Adds a readable part to the Form as a file.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use std::io::Cursor;
+    ///
+    /// let bytes = Cursor::new("Hello World!");
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_reader_file("input", bytes, "filename.txt");
+    /// ```
+    ///
+    pub fn add_reader_file<F, G, R>(&mut self, name: F, read: R, filename: G)
+    where
+        F: Into<String>,
+        G: Into<String>,
+        R: 'static + Read + Send,
+    {
+        let read = Box::new(read);
+
+        self.parts.push(Part::new::<_, String>(
+            Inner::Read(read, None),
+            name,
+            None,
+            Some(filename.into()),
+        ));
+    }
+
+    /// Adds a readable part to the Form as a file with a specified mime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate hyper_multipart_rfc7578;
+    /// #
+    /// use hyper::mime;
+    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use std::io::Cursor;
+    ///
+    /// # fn main() {
+    /// let bytes = Cursor::new("Hello World!");
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_reader_file_with_mime("input", bytes, "filename.txt", mime::TEXT_PLAIN);
+    /// # }
+    /// ```
+    ///
+    pub fn add_reader_file_with_mime<F, G, R>(&mut self, name: F, read: R, filename: G, mime: Mime)
+    where
+        F: Into<String>,
+        G: Into<String>,
+        R: 'static + Read + Send,
+    {
+        let read = Box::new(read);
+
+        self.parts.push(Part::new::<_, String>(
+            Inner::Read(read, None),
+            name,
+            Some(mime),
+            Some(filename.into()),
+        ));
+    }
+
     /// Adds a file with the specified mime type to the form.
     /// If the mime type isn't specified, a mime type will try to
     /// be derived.
