@@ -14,24 +14,24 @@ Currently, only the client-side is implemented.
 
 ```toml
 [dependencies]
-hyper-multipart-rfc7578 = "0.1.0-alpha2"
+hyper-multipart-rfc7578 = "0.1.0-alpha3"
 ```
 
 Because the name of this library is really wordy, I recommend shortening it:
 
 ```rust
-extern hyper_multipart_rfc7578 as hyper_multipart;
+extern crate hyper_multipart_rfc7578 as hyper_multipart;
 ```
 
 Using this requires a hyper client compatible with the `multipart::Body`
 data structure (see the documentation for more detailed examples):
 
 ```rust
+
 use hyper::{Method, Request};
 use hyper::client::Client;
 use hyper_multipart_rfc7578::client::{self, multipart};
 use tokio_core::reactor::{Core, Handle};
-
 
 let mut core = Core::new().unwrap();
 let client: Client<_, multipart::Body> = client::create(&core.handle());
