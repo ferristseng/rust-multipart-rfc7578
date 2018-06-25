@@ -13,7 +13,7 @@ use http::{
 };
 use hyper;
 use mime::{self, Mime};
-use rand::{self, Rng};
+use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
 use std::borrow::Borrow;
 use std::{
     fmt::Display, fs::File, io::{self, Cursor, Read, Write}, iter::{FromIterator, Peekable},
@@ -621,8 +621,8 @@ impl BoundaryGenerator for RandomAsciiGenerator {
     /// Creates a boundary of 6 ascii characters.
     ///
     fn generate_boundary() -> String {
-        let mut rng = rand::weak_rng();
-        let ascii = rng.gen_ascii_chars();
+        let mut rng = SmallRng::from_entropy();
+        let ascii = rng.sample_iter(&Alphanumeric);
 
         String::from_iter(ascii.take(6))
     }

@@ -19,7 +19,7 @@ futures           = "0.1"
 http              = "0.1"
 hyper             = "0.12"
 mime              = "0.3"
-rand              = "0.3"
+rand              = "0.5"
 tokio             = "0.1"
 
 [dev-dependencies]
