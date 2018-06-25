@@ -6,7 +6,7 @@ documentation     = "https://docs.rs/hyper-multipart-rfc7578"
 repository        = "https://github.com/ferristseng/rust-hyper-multipart-rfc7578"
 keywords          = ["hyper", "multipart", "form", "http"]
 categories        = ["asynchronous", "web-programming"]
-version           = "0.1.0-alpha3"
+version           = "0.2.0-alpha1"
 readme            = "README.md"
 license           = "MIT OR Apache-2.0"
 
@@ -16,9 +16,11 @@ travis-ci         = { repository = "ferristseng/rust-hyper-multipart-rfc7578" }
 [dependencies]
 bytes             = "0.4"
 futures           = "0.1"
-hyper             = "0.11"
+http              = "0.1"
+hyper             = "0.12"
+mime              = "0.3"
 rand              = "0.3"
-tokio-core        = "0.1"
+tokio             = "0.1"
 
 [dev-dependencies]
-hyper-tls         = "0.1"
+hyper-tls         = "0.2"

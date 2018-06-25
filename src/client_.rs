@@ -6,30 +6,21 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::{BufMut, BytesMut};
-use futures::{Async, Poll};
-use futures::stream::Stream;
-use hyper::{self, Request};
-use hyper::header::{ContentDisposition, ContentType, DispositionParam, DispositionType, Header};
-use hyper::mime::{self, Mime};
+use bytes::{BufMut, Bytes, BytesMut};
+use futures::{stream::Stream, Async, Poll};
+use http::{
+    self, header::CONTENT_TYPE, request::{Builder, Request},
+};
+use hyper;
+use mime::{self, Mime};
 use rand::{self, Rng};
 use std::borrow::Borrow;
-use std::fmt::Display;
-use std::fs::File;
-use std::io::{self, Cursor, Read, Write};
-use std::iter::{FromIterator, Peekable};
-use std::path::Path;
-use std::str::FromStr;
-use std::vec::IntoIter;
+use std::{
+    fmt::Display, fs::File, io::{self, Cursor, Read, Write}, iter::{FromIterator, Peekable},
+    path::Path, str::FromStr, vec::IntoIter,
+};
 
-/// Converts a hyper Header into a String.
-///
-fn header_to_string<H>(header: &H) -> String
-where
-    H: Header + Display,
-{
-    format!("{}: {}", H::header_name(), header)
-}
+use error::Error;
 
 /// Writes a CLRF.
 ///
@@ -94,18 +85,18 @@ impl Body {
         W: Write,
     {
         write_crlf(write)?;
-        write.write_all(header_to_string(&part.content_type).as_bytes())?;
+        write.write_all(&part.content_type.as_bytes())?;
         write_crlf(write)?;
-        write.write_all(header_to_string(&part.content_disposition).as_bytes())?;
+        write.write_all(&part.content_disposition.as_bytes())?;
         write_crlf(write)?;
         write_crlf(write)
     }
 }
 
 impl Stream for Body {
-    type Item = BytesMut;
+    type Item = Bytes;
 
-    type Error = hyper::Error;
+    type Error = Error;
 
     /// Iterate over each form part, and write it out.
     ///
@@ -115,8 +106,10 @@ impl Stream for Body {
 
         if self.current.is_none() {
             if let Some(part) = self.parts.next() {
-                self.write_boundary(&mut writer)?;
-                self.write_headers(&mut writer, &part)?;
+                self.write_boundary(&mut writer)
+                    .map_err(Error::BoundaryWrite)?;
+                self.write_headers(&mut writer, &part)
+                    .map_err(Error::HeaderWrite)?;
 
                 let read = match part.inner {
                     Inner::Read(read, _) => read,
@@ -135,7 +128,7 @@ impl Stream for Body {
         let num = if let Some(ref mut read) = self.current {
             let mut buf = writer.get_mut();
             unsafe {
-                let num = read.read(&mut buf.bytes_mut())?;
+                let num = read.read(&mut buf.bytes_mut()).map_err(Error::ContentRead)?;
 
                 buf.advance_mut(num);
 
@@ -155,14 +148,15 @@ impl Stream for Body {
             // If there is nothing, the final boundary can be written.
             //
             if self.parts.peek().is_none() {
-                self.write_final_boundary(&mut writer)?;
+                self.write_final_boundary(&mut writer)
+                    .map_err(Error::BoundaryWrite)?;
 
-                Ok(Async::Ready(Some(writer.into_inner())))
+                Ok(Async::Ready(Some(writer.into_inner().freeze())))
             } else {
                 self.poll()
             }
         } else {
-            Ok(Async::Ready(Some(writer.into_inner())))
+            Ok(Async::Ready(Some(writer.into_inner().freeze())))
         }
     }
 }
@@ -236,22 +230,22 @@ impl Form {
     ///
     /// # fn main() {
     /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
-    /// let mut req: Request<multipart::Body> = Request::new(Method::Post, url);
+    /// let mut req_builder = Request::post(url);
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// form.set_body(&mut req);
+    /// let req = form.set_body(&mut req_builder).unwrap();
     /// # }
     /// ```
     ///
-    pub fn set_body(self, req: &mut Request<Body>) {
+    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
-        req.headers_mut().set(ContentType(
-            Mime::from_str(&header).expect("multipart mime type should parse"),
-        ));
+        let header: &str = header.as_ref();
 
-        req.set_body(self);
+        req.header(CONTENT_TYPE, header);
+
+        req.body(hyper::Body::wrap_stream(Body::from(self)))
     }
 
     /// Adds a text part to the Form.
@@ -269,7 +263,7 @@ impl Form {
     ///
     pub fn add_text<N, T>(&mut self, name: N, text: T)
     where
-        N: Into<String>,
+        N: Display,
         T: Into<String>,
     {
         self.parts.push(Part::new::<_, String>(
@@ -296,7 +290,7 @@ impl Form {
     ///
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
-        F: Into<String>,
+        F: Display,
         R: 'static + Read + Send,
     {
         let read = Box::new(read);
@@ -325,7 +319,7 @@ impl Form {
     pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
     where
         P: AsRef<Path>,
-        F: Into<String>,
+        F: Display,
     {
         self._add_file(name, path, None)
     }
@@ -346,7 +340,7 @@ impl Form {
     ///
     pub fn add_reader_file<F, G, R>(&mut self, name: F, read: R, filename: G)
     where
-        F: Into<String>,
+        F: Display,
         G: Into<String>,
         R: 'static + Read + Send,
     {
@@ -366,9 +360,9 @@ impl Form {
     ///
     /// ```
     /// # extern crate hyper;
+    /// # extern crate mime;
     /// # extern crate hyper_multipart_rfc7578;
     /// #
-    /// use hyper::mime;
     /// use hyper_multipart_rfc7578::client::multipart;
     /// use std::io::Cursor;
     ///
@@ -382,7 +376,7 @@ impl Form {
     ///
     pub fn add_reader_file_with_mime<F, G, R>(&mut self, name: F, read: R, filename: G, mime: Mime)
     where
-        F: Into<String>,
+        F: Display,
         G: Into<String>,
         R: 'static + Read + Send,
     {
@@ -404,9 +398,9 @@ impl Form {
     ///
     /// ```
     /// # extern crate hyper;
+    /// # extern crate mime;
     /// # extern crate hyper_multipart_rfc7578;
     /// #
-    /// use hyper::mime;
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
     /// # fn main() {
@@ -420,7 +414,7 @@ impl Form {
     pub fn add_file_with_mime<P, F>(&mut self, name: F, path: P, mime: Mime) -> io::Result<()>
     where
         P: AsRef<Path>,
-        F: Into<String>,
+        F: Display,
     {
         self._add_file(name, path, Some(mime))
     }
@@ -430,7 +424,7 @@ impl Form {
     fn _add_file<P, F>(&mut self, name: F, path: P, mime: Option<Mime>) -> io::Result<()>
     where
         P: AsRef<Path>,
-        F: Into<String>,
+        F: Display,
     {
         let f = File::open(&path)?;
         let mime = if let Some(ext) = path.as_ref().extension() {
@@ -471,16 +465,16 @@ impl Form {
     }
 }
 
-impl Into<Body> for Form {
+impl From<Form> for Body {
     /// Turns a `Form` into a multipart `Body`.
     ///
     #[inline]
-    fn into(self) -> Body {
+    fn from(form: Form) -> Self {
         Body {
             buf_size: 2048,
             current: None,
-            parts: self.parts.into_iter().peekable(),
-            boundary: self.boundary,
+            parts: form.parts.into_iter().peekable(),
+            boundary: form.boundary,
         }
     }
 }
@@ -498,13 +492,13 @@ pub struct Part {
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)
     ///
-    content_type: ContentType,
+    content_type: String,
 
     /// Each part must contain a Content-Disposition header field.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.2).
     ///
-    content_disposition: ContentDisposition,
+    content_disposition: String,
 }
 
 impl Part {
@@ -518,33 +512,36 @@ impl Part {
     ///
     fn new<N, F>(inner: Inner, name: N, mime: Option<Mime>, filename: Option<F>) -> Part
     where
-        N: Into<String>,
-        F: Into<String>,
+        N: Display,
+        F: Display,
     {
         // `name` disposition parameter is required. It should correspond to the
         // name of a form field.
         //
         // [See 4.2](https://tools.ietf.org/html/rfc7578#section-4.2)
         //
-        let mut disposition_params = vec![DispositionParam::Ext("name".into(), name.into())];
+        let mut disposition_params = vec![format!("name=\"{}\"", name)];
 
         // `filename` can be supplied for files, but is totally optional.
         //
         // [See 4.2](https://tools.ietf.org/html/rfc7578#section-4.2)
         //
         if let Some(filename) = filename {
-            disposition_params.push(DispositionParam::Ext("filename".into(), filename.into()));
+            disposition_params.push(format!("filename=\"{}\"", filename));
         }
 
-        let content_type = ContentType(mime.unwrap_or_else(|| inner.default_content_type()));
+        let content_type = format!(
+            "Content-Type: {}",
+            mime.unwrap_or_else(|| inner.default_content_type())
+        );
 
         Part {
             inner: inner,
             content_type: content_type,
-            content_disposition: ContentDisposition {
-                disposition: DispositionType::Ext("form-data".into()),
-                parameters: disposition_params,
-            },
+            content_disposition: format!(
+                "Content-Disposition: form-data; {}",
+                disposition_params.join("; ")
+            ),
         }
     }
 }

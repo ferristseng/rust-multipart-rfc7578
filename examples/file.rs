@@ -6,19 +6,18 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+extern crate futures;
 extern crate hyper;
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
-extern crate tokio_core;
+extern crate tokio;
 
-use hyper::{Method, Request};
-use hyper::client::Client;
-use hyper_multipart::client::{self, multipart};
-use tokio_core::reactor::Core;
+use futures::Future;
+use hyper::{Client, Request};
+use hyper_multipart::client::multipart;
 
 fn main() {
-    let addr = "http://127.0.0.1:9001".parse().unwrap();
-    let mut core = Core::new().unwrap();
-    let client: Client<_, multipart::Body> = client::create(&core.handle());
+    let addr = "http://127.0.0.1:9001";
+    let client = Client::new();
 
     println!("note: this must be run in the root of the project repository");
     println!("note: run this with the example server running");
@@ -30,9 +29,9 @@ fn main() {
     form.add_file("input", file!())
         .expect("source file path should exist");
 
-    let mut req = Request::new(Method::Post, addr);
+    let mut req_builder = Request::post(addr);
 
-    form.set_body(&mut req);
+    let req = form.set_body(&mut req_builder).unwrap();
 
-    core.run(client.request(req)).unwrap();
+    tokio::run(client.request(req).map(|_| ()).map_err(|_| ()));
 }
