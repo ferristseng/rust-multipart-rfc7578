@@ -7,35 +7,22 @@
 //
 
 extern crate futures;
+extern crate http;
 extern crate hyper;
 
-use futures::future::Future;
-use futures::stream::Stream;
-use hyper::StatusCode;
-use hyper::server::{Http, Request, Response, Service};
+use futures::{Future, Stream};
+use hyper::{service::service_fn, Body, Request, Response, Server};
 
-struct Debug;
+type BoxFut = Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 
-impl Service for Debug {
-    type Request = Request;
+fn index(req: Request<Body>) -> BoxFut {
+    let res = req.into_body().concat2().map(|bod| {
+        println!("{}", String::from_utf8_lossy(&bod));
 
-    type Response = Response;
+        Response::new(Body::empty())
+    });
 
-    type Error = hyper::Error;
-
-    type Future = Box<Future<Item = Response, Error = hyper::Error>>;
-
-    fn call(&self, req: Request) -> Self::Future {
-        println!("{:?}", req);
-
-        let res = req.body().concat2().map(|bod| {
-            println!("{}", String::from_utf8_lossy(&bod));
-
-            Response::new().with_status(StatusCode::Ok)
-        });
-
-        Box::new(res)
-    }
+    Box::new(res)
 }
 
 /// This example runs a server that prints requests as it receives them.
@@ -43,12 +30,9 @@ impl Service for Debug {
 ///
 fn main() {
     let addr = "127.0.0.1:9001".parse().unwrap();
-    let server = Http::new().bind(&addr, || Ok(Debug)).unwrap();
+    let server = Server::bind(&addr)
+        .serve(|| service_fn(index))
+        .map_err(|e| eprintln!("{}", e));
 
-    println!(
-        "Listening on http://{} with 1 thread.",
-        server.local_addr().unwrap()
-    );
-
-    server.run().unwrap();
+    hyper::rt::run(server);
 }
