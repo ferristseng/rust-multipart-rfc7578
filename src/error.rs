@@ -29,8 +29,8 @@ impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
             Error::HeaderWrite(_) => "Error writing headers",
-            Error::BoundaryWrite(_) => "Error writing boundary: {}",
-            Error::ContentRead(_) => "Error reading content: {}",
+            Error::BoundaryWrite(_) => "Error writing boundary",
+            Error::ContentRead(_) => "Error reading content",
         }
     }
 

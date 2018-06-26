@@ -85,9 +85,9 @@ impl Body {
         W: Write,
     {
         write_crlf(write)?;
-        write.write_all(&part.content_type.as_bytes())?;
+        write.write_all(&format!("Content-Type: {}", part.content_type).as_bytes())?;
         write_crlf(write)?;
-        write.write_all(&part.content_disposition.as_bytes())?;
+        write.write_all(&format!("Content-Disposition: {}", part.content_disposition).as_bytes())?;
         write_crlf(write)?;
         write_crlf(write)
     }
@@ -530,18 +530,12 @@ impl Part {
             disposition_params.push(format!("filename=\"{}\"", filename));
         }
 
-        let content_type = format!(
-            "Content-Type: {}",
-            mime.unwrap_or_else(|| inner.default_content_type())
-        );
+        let content_type = format!("{}", mime.unwrap_or_else(|| inner.default_content_type()));
 
         Part {
             inner: inner,
             content_type: content_type,
-            content_disposition: format!(
-                "Content-Disposition: form-data; {}",
-                disposition_params.join("; ")
-            ),
+            content_disposition: format!("form-data; {}", disposition_params.join("; ")),
         }
     }
 }
