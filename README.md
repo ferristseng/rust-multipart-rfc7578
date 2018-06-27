@@ -28,8 +28,7 @@ data structure (see the documentation for more detailed examples):
 
 ```rust
 
-use futures::Future;
-use hyper::{Method, Request, Client};
+use hyper::{Client, Request, rt::{self, Future}};
 use hyper_multipart_rfc7578::client::{self, multipart};
 
 let client = Client::new();
@@ -39,7 +38,12 @@ let mut form = multipart::Form::default();
 form.add_text("test", "Hello World");
 let req = form.set_body(&mut req_builder).unwrap();
 
-tokio::run(client.request(req).map(|_| ()).map_err(|_| ()));
+rt::run(
+    client
+        .request(req)
+        .map(|_| println!("done..."))
+        .map_err(|_| println!("an error occurred")),
+);
 ```
 
 

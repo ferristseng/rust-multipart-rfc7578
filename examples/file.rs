@@ -6,18 +6,15 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate futures;
 extern crate hyper;
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
-extern crate tokio;
 
-use futures::Future;
-use hyper::{Client, Request};
+use hyper::{Client, Request, rt::{self, Future}};
 use hyper_multipart::client::multipart;
 
 fn main() {
     let addr = "http://127.0.0.1:9001";
-    let client = Client::new();
+    let client = Client::builder().keep_alive(false).build_http();
 
     println!("note: this must be run in the root of the project repository");
     println!("note: run this with the example server running");
@@ -33,5 +30,10 @@ fn main() {
 
     let req = form.set_body(&mut req_builder).unwrap();
 
-    tokio::run(client.request(req).map(|_| ()).map_err(|_| ()));
+    rt::run(
+        client
+            .request(req)
+            .map(|_| println!("done..."))
+            .map_err(|_| println!("an error occurred")),
+    );
 }

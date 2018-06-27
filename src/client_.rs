@@ -8,7 +8,7 @@
 
 use bytes::{BufMut, Bytes, BytesMut};
 use futures::{Async, Poll, stream::Stream};
-use http::{self, header::CONTENT_TYPE, request::{Builder, Request}};
+use http::{self, header::CONTENT_DISPOSITION, header::CONTENT_TYPE, request::{Builder, Request}};
 use hyper;
 use mime::{self, Mime};
 use rand::{FromEntropy, Rng, distributions::Alphanumeric, rngs::SmallRng};
@@ -81,9 +81,13 @@ impl Body {
         W: Write,
     {
         write_crlf(write)?;
-        write.write_all(&format!("Content-Type: {}", part.content_type).as_bytes())?;
+        write.write_all(CONTENT_TYPE.as_ref())?;
+        write.write_all(b": ")?;
+        write.write_all(part.content_type.as_bytes())?;
         write_crlf(write)?;
-        write.write_all(&format!("Content-Disposition: {}", part.content_disposition).as_bytes())?;
+        write.write_all(CONTENT_DISPOSITION.as_ref())?;
+        write.write_all(b": ")?;
+        write.write_all(part.content_disposition.as_bytes())?;
         write_crlf(write)?;
         write_crlf(write)
     }

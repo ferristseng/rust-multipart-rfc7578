@@ -23,4 +23,3 @@ rand              = "0.5"
 
 [dev-dependencies]
 hyper-tls         = "0.2"
-tokio             = "0.1"
