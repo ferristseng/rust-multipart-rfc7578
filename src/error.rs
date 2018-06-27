@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use std::{error::Error as StdError, fmt, io::Error as IoError};
+use std::{fmt, error::Error as StdError, io::Error as IoError};
 
 #[derive(Debug)]
 pub enum Error {

@@ -11,7 +11,7 @@ extern crate http;
 extern crate hyper;
 
 use futures::{Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
+use hyper::{Body, Request, Response, Server, service::service_fn};
 
 type BoxFut = Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 

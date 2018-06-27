@@ -7,18 +7,14 @@
 //
 
 use bytes::{BufMut, Bytes, BytesMut};
-use futures::{stream::Stream, Async, Poll};
-use http::{
-    self, header::CONTENT_TYPE, request::{Builder, Request},
-};
+use futures::{Async, Poll, stream::Stream};
+use http::{self, header::CONTENT_TYPE, request::{Builder, Request}};
 use hyper;
 use mime::{self, Mime};
-use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
+use rand::{FromEntropy, Rng, distributions::Alphanumeric, rngs::SmallRng};
 use std::borrow::Borrow;
-use std::{
-    fmt::Display, fs::File, io::{self, Cursor, Read, Write}, iter::{FromIterator, Peekable},
-    path::Path, str::FromStr, vec::IntoIter,
-};
+use std::{fmt::Display, fs::File, io::{self, Cursor, Read, Write}, iter::{FromIterator, Peekable},
+          path::Path, str::FromStr, vec::IntoIter};
 
 use error::Error;
 
