@@ -28,20 +28,18 @@ data structure (see the documentation for more detailed examples):
 
 ```rust
 
-use hyper::{Method, Request};
-use hyper::client::Client;
+use futures::Future;
+use hyper::{Method, Request, Client};
 use hyper_multipart_rfc7578::client::{self, multipart};
-use tokio_core::reactor::{Core, Handle};
 
-let mut core = Core::new().unwrap();
-let client: Client<_, multipart::Body> = client::create(&core.handle());
-let mut req = Request::new(Method::Get, "http://localhost/upload".parse().unwrap());
+let client = Client::new();
+let mut req_builder = Request::get("http://localhost/upload");
 let mut form = multipart::Form::default();
 
 form.add_text("test", "Hello World");
-form.set_body(&mut req);
+let req = form.set_body(&mut req_builder).unwrap();
 
-core.run(client.request(req));
+tokio::run(client.request(req).map(|_| ()).map_err(|_| ()));
 ```
 
 
