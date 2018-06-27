@@ -6,10 +6,10 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
 use futures::{Async, Poll, stream::Stream};
 use http::{self, header::CONTENT_DISPOSITION, header::CONTENT_TYPE, request::{Builder, Request}};
-use hyper;
+use hyper::{self, body::Payload};
 use mime::{self, Mime};
 use rand::{FromEntropy, Rng, distributions::Alphanumeric, rngs::SmallRng};
 use std::borrow::Borrow;
@@ -157,6 +157,23 @@ impl Stream for Body {
             }
         } else {
             Ok(Async::Ready(Some(writer.into_inner().freeze())))
+        }
+    }
+}
+
+impl Payload for Body {
+    type Data = Cursor<Bytes>;
+
+    type Error = Error;
+
+    /// Implement `Payload` so `Body` can be used with a hyper client.
+    ///
+    #[inline]
+    fn poll_data(&mut self) -> Poll<Option<Self::Data>, Self::Error> {
+        match self.poll() {
+            Ok(Async::Ready(read)) => Ok(Async::Ready(read.map(IntoBuf::into_buf))),
+            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Err(e) => Err(e),
         }
     }
 }
