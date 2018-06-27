@@ -6,7 +6,7 @@ documentation     = "https://docs.rs/hyper-multipart-rfc7578"
 repository        = "https://github.com/ferristseng/rust-hyper-multipart-rfc7578"
 keywords          = ["hyper", "multipart", "form", "http"]
 categories        = ["asynchronous", "web-programming"]
-version           = "0.2.0-alpha1"
+version           = "0.2.0-alpha2"
 readme            = "README.md"
 license           = "MIT OR Apache-2.0"
 
