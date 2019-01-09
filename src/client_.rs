@@ -7,14 +7,27 @@
 //
 
 use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
-use futures::{Async, Poll, stream::Stream};
-use http::{self, header::CONTENT_DISPOSITION, header::CONTENT_TYPE, request::{Builder, Request}};
+use futures::{stream::Stream, Async, Poll};
+use http::{
+    self,
+    header::CONTENT_DISPOSITION,
+    header::CONTENT_TYPE,
+    request::{Builder, Request},
+};
+#[cfg(feature = "hyper")]
 use hyper::{self, body::Payload};
 use mime::{self, Mime};
-use rand::{FromEntropy, Rng, distributions::Alphanumeric, rngs::SmallRng};
+use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
 use std::borrow::Borrow;
-use std::{fmt::Display, fs::File, io::{self, Cursor, Read, Write}, iter::{FromIterator, Peekable},
-          path::Path, str::FromStr, vec::IntoIter};
+use std::{
+    fmt::Display,
+    fs::File,
+    io::{self, Cursor, Read, Write},
+    iter::{FromIterator, Peekable},
+    path::Path,
+    str::FromStr,
+    vec::IntoIter,
+};
 
 use error::Error;
 
@@ -127,7 +140,9 @@ impl<'a> Stream for Body<'a> {
         let num = if let Some(ref mut read) = self.current {
             let mut buf = writer.get_mut();
             unsafe {
-                let num = read.read(&mut buf.bytes_mut()).map_err(Error::ContentRead)?;
+                let num = read
+                    .read(&mut buf.bytes_mut())
+                    .map_err(Error::ContentRead)?;
 
                 buf.advance_mut(num);
 
@@ -160,6 +175,7 @@ impl<'a> Stream for Body<'a> {
     }
 }
 
+#[cfg(feature = "hyper")]
 impl Payload for Body<'static> {
     type Data = Cursor<Bytes>;
 
@@ -343,7 +359,6 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate hyper;
     /// # extern crate mime;
     /// # extern crate hyper_multipart_rfc7578;
     /// #
@@ -381,7 +396,6 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate hyper;
     /// # extern crate mime;
     /// # extern crate hyper_multipart_rfc7578;
     /// #
@@ -472,6 +486,7 @@ impl Form<'static> {
     /// # }
     /// ```
     ///
+    #[cfg(feature = "hyper")]
     pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 

@@ -13,13 +13,18 @@ license           = "MIT OR Apache-2.0"
 [badges]
 travis-ci         = { repository = "ferristseng/rust-hyper-multipart-rfc7578" }
 
+[features]
+default           = ["hyper"]
+actix             = ["actix-web"]
+
 [dependencies]
 bytes             = "0.4"
 futures           = "0.1"
 http              = "0.1"
-hyper             = "0.12"
+hyper             = { version = "0.12", optional = true }
 mime              = "0.3"
 rand              = "0.5"
+actix-web         = { version = "0.7", optional = true }
 
 [dev-dependencies]
 hyper-tls         = "0.3"

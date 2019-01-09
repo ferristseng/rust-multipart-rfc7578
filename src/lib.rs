@@ -11,7 +11,6 @@
 //! hyper.
 //!
 //! Currently, only the client-side is implemented.
-//!
 //! ## Usage
 //!
 //! ```toml
@@ -27,34 +26,67 @@
 //!
 //! Using this requires a hyper client compatible with the `multipart::Body`
 //! data structure (see the documentation for more detailed examples):
-//!
-//! ```rust
-//! # extern crate hyper;
-//! # extern crate hyper_multipart_rfc7578;
-//!
-//! use hyper::{Client, Request, rt::{self, Future}};
-//! use hyper_multipart_rfc7578::client::{self, multipart};
-//!
-//! # fn main() {
-//! let client = Client::new();
-//! let mut req_builder = Request::get("http://localhost/upload");
-//! let mut form = multipart::Form::default();
-//!
-//! form.add_text("test", "Hello World");
-//! let req = form.set_body(&mut req_builder).unwrap();
-//!
-//! rt::run(
-//!     client
-//!         .request(req)
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred")),
-//! );
-//! # }
-//! ```
-//!
+
+
+/// ### With Actix
+///
+/// ```rust
+/// # extern crate actix_web;
+/// # extern crate futures;
+/// # extern crate hyper_multipart_rfc7578;
+///
+/// use futures::prelude::*;
+/// use hyper_multipart_rfc7578::client::{self, multipart};
+///
+/// # fn main() {
+/// let mut form = multipart::Form::default();
+///
+/// form.add_text("test", "Hello World");
+/// actix_web::actix::run(|| {
+///     actix_web::client::get("http://localhost/upload")
+///         .streaming(multipart::Body::from(form))
+///         .unwrap()
+///         .send()
+///         .map(|_| println!("done..."))
+///         .map_err(|_| println!("an error occurred"))
+///         .then(|_| { actix_web::actix::System::current().stop(); Ok(()) })
+/// });
+/// # }
+/// ```
+#[cfg(feature = "actix")]
+extern crate actix_web;
 extern crate bytes;
 extern crate futures;
 extern crate http;
+
+/// ### With Hyper
+///
+/// ```rust
+/// # extern crate futures;
+/// # extern crate hyper;
+/// # extern crate hyper_multipart_rfc7578;
+///
+/// use futures::prelude::*;
+/// use hyper::{Client, Request, rt::{self, Future}};
+/// use hyper_multipart_rfc7578::client::{self, multipart};
+///
+/// # fn main() {
+/// let mut form = multipart::Form::default();
+///
+/// form.add_text("test", "Hello World");
+/// let client = Client::new();
+/// let mut req_builder = Request::get("http://localhost/upload");
+/// let req = form.set_body(&mut req_builder).unwrap();
+///
+/// rt::run(
+///     client
+///         .request(req)
+///         .map(|_| println!("done..."))
+///         .map_err(|_| println!("an error occurred")),
+/// );
+/// # }
+/// ```
+#[cfg(feature = "hyper")]
 extern crate hyper;
 extern crate mime;
 extern crate rand;
