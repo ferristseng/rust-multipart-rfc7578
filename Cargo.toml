@@ -22,4 +22,4 @@ mime              = "0.3"
 rand              = "0.5"
 
 [dev-dependencies]
-hyper-tls         = "0.2"
+hyper-tls         = "0.3"
