@@ -29,26 +29,26 @@ where
 
 /// Multipart body that is compatible with Hyper.
 ///
-pub struct Body {
+pub struct Body<'a> {
     /// The amount of data to write with each chunk.
     ///
     buf_size: usize,
 
     /// The active reader.
     ///
-    current: Option<Box<'static + Read + Send>>,
+    current: Option<Box<'a + Read + Send>>,
 
     /// The parts as an iterator. When the iterator stops
     /// yielding, the body is fully written.
     ///
-    parts: Peekable<IntoIter<Part>>,
+    parts: Peekable<IntoIter<Part<'a>>>,
 
     /// The multipart boundary.
     ///
     boundary: String,
 }
 
-impl Body {
+impl<'a> Body<'a> {
     /// Implements section 4.1.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
@@ -93,7 +93,7 @@ impl Body {
     }
 }
 
-impl Stream for Body {
+impl<'a> Stream for Body<'a> {
     type Item = Bytes;
 
     type Error = Error;
@@ -121,7 +121,6 @@ impl Stream for Body {
                 // No current part, and no parts left means there is nothing
                 // left to write.
                 //
-                return Ok(Async::Ready(None));
             }
         }
 
@@ -161,7 +160,7 @@ impl Stream for Body {
     }
 }
 
-impl Payload for Body {
+impl Payload for Body<'static> {
     type Data = Cursor<Bytes>;
 
     type Error = Error;
@@ -183,8 +182,8 @@ impl Payload for Body {
 ///
 /// [See](https://tools.ietf.org/html/rfc7578#section-1).
 ///
-pub struct Form {
-    parts: Vec<Part>,
+pub struct Form<'a> {
+    parts: Vec<Part<'a>>,
 
     /// The auto-generated boundary as described by 4.1.
     ///
@@ -193,16 +192,16 @@ pub struct Form {
     boundary: String,
 }
 
-impl Default for Form {
+impl<'a> Default for Form<'a> {
     /// Creates a new form with the default boundary generator.
     ///
     #[inline]
-    fn default() -> Form {
+    fn default() -> Form<'a> {
         Form::new::<RandomAsciiGenerator>()
     }
 }
 
-impl Form {
+impl<'a> Form<'a> {
     /// Creates a new form with the specified boundary generator function.
     ///
     /// # Examples
@@ -223,7 +222,7 @@ impl Form {
     /// ```
     ///
     #[inline]
-    pub fn new<G>() -> Form
+    pub fn new<G>() -> Form<'a>
     where
         G: BoundaryGenerator,
     {
@@ -231,38 +230,6 @@ impl Form {
             parts: vec![],
             boundary: G::generate_boundary(),
         }
-    }
-
-    /// Updates a request instance with the multipart Content-Type header
-    /// and the payload data.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate hyper;
-    /// # extern crate hyper_multipart_rfc7578;
-    /// #
-    /// use hyper::{Method, Request, Uri};
-    /// use hyper_multipart_rfc7578::client::multipart;
-    ///
-    /// # fn main() {
-    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
-    /// let mut req_builder = Request::post(url);
-    /// let mut form = multipart::Form::default();
-    ///
-    /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
-    /// # }
-    /// ```
-    ///
-    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
-        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
-
-        let header: &str = header.as_ref();
-
-        req.header(CONTENT_TYPE, header);
-
-        req.body(hyper::Body::wrap_stream(Body::from(self)))
     }
 
     /// Adds a text part to the Form.
@@ -308,7 +275,7 @@ impl Form {
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         let read = Box::new(read);
 
@@ -359,7 +326,7 @@ impl Form {
     where
         F: Display,
         G: Into<String>,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         let read = Box::new(read);
 
@@ -395,7 +362,7 @@ impl Form {
     where
         F: Display,
         G: Into<String>,
-        R: 'static + Read + Send,
+        R: 'a + Read + Send,
     {
         let read = Box::new(read);
 
@@ -482,11 +449,45 @@ impl Form {
     }
 }
 
-impl From<Form> for Body {
+impl Form<'static> {
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate hyper_multipart_rfc7578;
+    /// #
+    /// use hyper::{Method, Request, Uri};
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// # fn main() {
+    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
+    /// let mut req_builder = Request::post(url);
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// # }
+    /// ```
+    ///
+    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
+        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
+
+        let header: &str = header.as_ref();
+
+        req.header(CONTENT_TYPE, header);
+
+        req.body(hyper::Body::wrap_stream(Body::<'static>::from(self)))
+    }
+}
+
+impl<'a> From<Form<'a>> for Body<'a> {
     /// Turns a `Form` into a multipart `Body`.
     ///
     #[inline]
-    fn from(form: Form) -> Self {
+    fn from(form: Form<'a>) -> Self {
         Body {
             buf_size: 2048,
             current: None,
@@ -500,8 +501,8 @@ impl From<Form> for Body {
 ///
 /// [See RFC2046 5.1](https://tools.ietf.org/html/rfc2046#section-5.1).
 ///
-pub struct Part {
-    inner: Inner,
+pub struct Part<'a> {
+    inner: Inner<'a>,
 
     /// Each part can include a Content-Type header field. If this
     /// is not specified, it defaults to "text/plain", or
@@ -518,7 +519,7 @@ pub struct Part {
     content_disposition: String,
 }
 
-impl Part {
+impl<'a> Part<'a> {
     /// Internal method to build a new Part instance. Sets the disposition type,
     /// content-type, and the disposition parameters for name, and optionally
     /// for filename.
@@ -527,7 +528,7 @@ impl Part {
     /// files need to be specified for one form field, they can all be specified
     /// with the same name parameter.
     ///
-    fn new<N, F>(inner: Inner, name: N, mime: Option<Mime>, filename: Option<F>) -> Part
+    fn new<N, F>(inner: Inner<'a>, name: N, mime: Option<Mime>, filename: Option<F>) -> Part<'a>
     where
         N: Display,
         F: Display,
@@ -557,7 +558,7 @@ impl Part {
     }
 }
 
-enum Inner {
+enum Inner<'a> {
     /// The `Read` variant captures multiple cases.
     ///
     ///   * The first is it supports uploading a file, which is explicitly
@@ -569,14 +570,14 @@ enum Inner {
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
     ///
-    Read(Box<'static + Read + Send>, Option<u64>),
+    Read(Box<'a + Read + Send>, Option<u64>),
 
     /// The `String` variant handles "text/plain" form data payloads.
     ///
     Text(String),
 }
 
-impl Inner {
+impl<'a> Inner<'a> {
     /// Returns the default Content-Type header value as described in section 4.4.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)
