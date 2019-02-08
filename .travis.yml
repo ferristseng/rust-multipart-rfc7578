@@ -3,3 +3,8 @@ rust:
   - stable
   - beta
   - nightly
+script:
+  - cargo build --verbose
+  - cargo build --verbose --features actix --no-default-features
+  - cargo test --verbose
+  - cargo test --verbose --features actix --no-default-features

@@ -6,7 +6,10 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use std::{fmt, error::Error as StdError, io::Error as IoError};
+use std::{error::Error as StdError, fmt, io::Error as IoError};
+
+#[cfg(feature = "actix")]
+use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 
 #[derive(Debug)]
 pub enum Error {
@@ -39,6 +42,15 @@ impl StdError for Error {
             Error::HeaderWrite(ref e) => Some(e),
             Error::BoundaryWrite(ref e) => Some(e),
             Error::ContentRead(ref e) => Some(e),
+        }
+    }
+}
+
+#[cfg(feature = "actix")]
+impl ResponseError for Error {
+    fn error_response(&self) -> HttpResponse {
+        match *self {
+            _ => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
