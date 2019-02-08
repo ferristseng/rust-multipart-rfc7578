@@ -7,55 +7,7 @@
 //
 
 //! This crate contains an implementation of the multipart/form-data media
-//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for
-//! hyper and actix.
-//!
-//! Currently, only the client-side is implemented.
-//!
-//! ## Usage
-//!
-//! ```toml
-//! [dependencies]
-//! hyper-multipart-rfc7578 = "0.2.0-alpha2"
-//! ```
-//!
-//! Because the name of this library is really wordy, I recommend shortening it:
-//!
-//! ```rust
-//! extern crate hyper_multipart_rfc7578 as hyper_multipart;
-//! ```
-//!
-//! Using this requires a hyper client compatible with the `multipart::Body`
-//! data structure (see the documentation for more detailed examples):
-//!
-//! ```rust
-//! # extern crate hyper;
-//! # extern crate hyper_multipart_rfc7578 as hyper_multipart;
-//!
-//! use hyper::{
-//!     rt::{self, Future},
-//!     Client, Request,
-//! };
-//! use hyper_multipart::client::{self, multipart};
-//!
-//! # fn main() {
-//! let client = Client::builder().build_http();
-//! let mut form = multipart::Form::default();
-//!
-//! form.add_text("test", "Hello World");
-//!
-//! let mut req_builder = Request::get("http://localhost/upload");
-//!
-//! let req = form.set_body::<multipart::Body>(&mut req_builder).unwrap();
-//!
-//! rt::run(
-//!     client
-//!         .request(req)
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred")),
-//! );
-//! # }
-//! ```
+//! type described in [RFC 7578](https://tools.ietf.org/html/rfc7578).
 //!
 
 extern crate bytes;

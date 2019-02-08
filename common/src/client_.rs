@@ -38,7 +38,7 @@ where
     write.write_all(&[b'\r', b'\n'])
 }
 
-/// Multipart body that is compatible with Hyper.
+/// Async streamable Multipart body.
 ///
 pub struct Body<'a> {
     /// The amount of data to write with each chunk.
@@ -489,7 +489,7 @@ impl<'a> Form<'a> {
     ///
     pub fn set_body_convert<B, I>(self, req: &mut Builder) -> Result<Request<B>, http::Error>
     where
-        I: From<Body<'a>> + Into<B>
+        I: From<Body<'a>> + Into<B>,
     {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
@@ -624,7 +624,7 @@ impl<'a> Inner<'a> {
 ///
 /// The default generator will build a random string of 6 ascii characters.
 /// If you need more complexity, you can implement this, and use it with
-/// [`Form::new`](/common_multipart_rfc7578/client/multipart/struct.Form.html#method.new).
+/// [`Form::new`].
 ///
 /// # Examples
 ///
