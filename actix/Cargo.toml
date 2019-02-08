@@ -14,5 +14,7 @@ license                   = "MIT OR Apache-2.0"
 travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" }
 
 [dependencies]
-common-multipart-rfc7578  = { path = "../common" }
 actix-web                 = "0.7"
+bytes                     = "*"
+common-multipart-rfc7578  = { path = "../common" }
+futures                   = "*"
