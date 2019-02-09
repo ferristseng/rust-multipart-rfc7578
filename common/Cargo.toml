@@ -3,7 +3,7 @@ name                      = "common-multipart-rfc7578"
 description               = "An implementation of multipart/form-data (RFC7578)"
 authors                   = ["Ferris Tseng <ferristseng@fastmail.fm>"]
 documentation             = "https://docs.rs/common-multipart-rfc7578"
-repository                = "https://github.com/ferristseng/rust-hyper-multipart-rfc7578"
+repository                = "https://github.com/ferristseng/rust-multipart-rfc7578"
 keywords                  = ["multipart", "form", "http"]
 categories                = ["asynchronous", "web-programming"]
 version                   = "0.1.0"
@@ -11,7 +11,8 @@ readme                    = "../README.md"
 license                   = "MIT OR Apache-2.0"
 
 [badges]
-travis-ci                 = { repository = "ferristseng/rust-hyper-multipart-rfc7578" }
+travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" }
+maintenance               = { status = "passively-maintained" }
 
 [dependencies]
 bytes                     = "0.4"

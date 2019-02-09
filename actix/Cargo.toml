@@ -1,6 +1,6 @@
 [package]
 name                      = "actix-multipart-rfc7578"
-description               = "An implementation of multipart/form-data (RFC7578) for Hyper"
+description               = "An implementation of multipart/form-data (RFC7578) for Actix"
 authors                   = ["Ferris Tseng <ferristseng@fastmail.fm>"]
 documentation             = "https://docs.rs/actix-multipart-rfc7578"
 repository                = "https://github.com/ferristseng/rust-multipart-rfc7578"
@@ -12,6 +12,7 @@ license                   = "MIT OR Apache-2.0"
 
 [badges]
 travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" }
+maintenance               = { status = "passively-maintained" }
 
 [dependencies]
 actix-web                 = "0.7"
