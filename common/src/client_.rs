@@ -1,4 +1,4 @@
-// Copyright 2017 rust-hyper-multipart-rfc7578 Developers
+// Copyright 2017 rust-multipart-rfc7578 Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::{BufMut, Bytes, BytesMut, IntoBuf};
+use bytes::{BufMut, Bytes, BytesMut};
 use futures::{stream::Stream, Async, Poll};
 use http::{
     self,
@@ -14,8 +14,6 @@ use http::{
     header::CONTENT_TYPE,
     request::{Builder, Request},
 };
-#[cfg(feature = "hyper")]
-use hyper::{self, body::Payload};
 use mime::{self, Mime};
 use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
 use std::borrow::Borrow;
@@ -40,7 +38,7 @@ where
     write.write_all(&[b'\r', b'\n'])
 }
 
-/// Multipart body that is compatible with Hyper.
+/// Async streamable Multipart body.
 ///
 pub struct Body<'a> {
     /// The amount of data to write with each chunk.
@@ -134,6 +132,7 @@ impl<'a> Stream for Body<'a> {
                 // No current part, and no parts left means there is nothing
                 // left to write.
                 //
+                return Ok(Async::Ready(None));
             }
         }
 
@@ -175,24 +174,6 @@ impl<'a> Stream for Body<'a> {
     }
 }
 
-#[cfg(feature = "hyper")]
-impl Payload for Body<'static> {
-    type Data = Cursor<Bytes>;
-
-    type Error = Error;
-
-    /// Implement `Payload` so `Body` can be used with a hyper client.
-    ///
-    #[inline]
-    fn poll_data(&mut self) -> Poll<Option<Self::Data>, Self::Error> {
-        match self.poll() {
-            Ok(Async::Ready(read)) => Ok(Async::Ready(read.map(IntoBuf::into_buf))),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 /// Implements the multipart/form-data media type as described by
 /// RFC 7578.
 ///
@@ -223,8 +204,10 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use hyper_multipart_rfc7578::client::multipart;
-    /// # use hyper_multipart_rfc7578::client::multipart::BoundaryGenerator;
+    /// # use common_multipart_rfc7578::client::multipart::{
+    /// #     self,
+    /// #     BoundaryGenerator
+    /// # };
     /// #
     /// struct TestGenerator;
     ///
@@ -253,7 +236,7 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     ///
     /// let mut form = multipart::Form::default();
     ///
@@ -279,7 +262,7 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     /// use std::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
@@ -308,7 +291,7 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     ///
     /// let mut form = multipart::Form::default();
     ///
@@ -329,7 +312,7 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     /// use std::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
@@ -359,18 +342,13 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate mime;
-    /// # extern crate hyper_multipart_rfc7578;
-    /// #
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     /// use std::io::Cursor;
     ///
-    /// # fn main() {
     /// let bytes = Cursor::new("Hello World!");
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_reader_file_with_mime("input", bytes, "filename.txt", mime::TEXT_PLAIN);
-    /// # }
     /// ```
     ///
     pub fn add_reader_file_with_mime<F, G, R>(&mut self, name: F, read: R, filename: G, mime: Mime)
@@ -396,16 +374,11 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate mime;
-    /// # extern crate hyper_multipart_rfc7578;
-    /// #
-    /// use hyper_multipart_rfc7578::client::multipart;
+    /// use common_multipart_rfc7578::client::multipart;
     ///
-    /// # fn main() {
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_file_with_mime("data", "test.csv", mime::TEXT_CSV);
-    /// # }
     /// ```
     ///
     #[inline]
@@ -461,9 +434,7 @@ impl<'a> Form<'a> {
 
         Ok(())
     }
-}
 
-impl Form<'static> {
     /// Updates a request instance with the multipart Content-Type header
     /// and the payload data.
     ///
@@ -473,28 +444,60 @@ impl Form<'static> {
     /// # extern crate hyper;
     /// # extern crate hyper_multipart_rfc7578;
     /// #
-    /// use hyper::{Method, Request, Uri};
+    /// use hyper::{Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
     /// # fn main() {
-    /// let url: Uri = "http://localhost:80/upload".parse().unwrap();
-    /// let mut req_builder = Request::post(url);
+    /// let mut req_builder = Request::post("http://localhost:80/upload");
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body(&mut req_builder).unwrap();
+    /// let req = form.set_body::<multipart::Body>(&mut req_builder).unwrap();
     /// # }
     /// ```
     ///
-    #[cfg(feature = "hyper")]
-    pub fn set_body(self, req: &mut Builder) -> Result<Request<hyper::Body>, http::Error> {
+    #[inline]
+    pub fn set_body<B>(self, req: &mut Builder) -> Result<Request<B>, http::Error>
+    where
+        B: From<Body<'a>>,
+    {
+        self.set_body_convert::<B, B>(req)
+    }
+
+    /// Updates a request instance with the multipart Content-Type header
+    /// and the payload data.
+    ///
+    /// Allows converting body into an intermediate type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate hyper;
+    /// # extern crate hyper_multipart_rfc7578;
+    /// #
+    /// use hyper::{Body, Method, Request};
+    /// use hyper_multipart_rfc7578::client::multipart;
+    ///
+    /// # fn main() {
+    /// let mut req_builder = Request::post("http://localhost:80/upload");
+    /// let mut form = multipart::Form::default();
+    ///
+    /// form.add_text("text", "Hello World!");
+    /// let req = form.set_body_convert::<hyper::Body, multipart::Body>(&mut req_builder).unwrap();
+    /// # }
+    /// ```
+    ///
+    pub fn set_body_convert<B, I>(self, req: &mut Builder) -> Result<Request<B>, http::Error>
+    where
+        I: From<Body<'a>> + Into<B>,
+    {
         let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
 
         let header: &str = header.as_ref();
 
         req.header(CONTENT_TYPE, header);
 
-        req.body(hyper::Body::wrap_stream(Body::<'static>::from(self)))
+        req.body(I::from(Body::from(self)).into())
     }
 }
 
@@ -621,12 +624,12 @@ impl<'a> Inner<'a> {
 ///
 /// The default generator will build a random string of 6 ascii characters.
 /// If you need more complexity, you can implement this, and use it with
-/// [`Form::new`](/hyper_multipart_rfc7578/client/multipart/struct.Form.html#method.new).
+/// [`Form::new`].
 ///
 /// # Examples
 ///
 /// ```
-/// use hyper_multipart_rfc7578::client::multipart::BoundaryGenerator;
+/// use common_multipart_rfc7578::client::multipart::BoundaryGenerator;
 ///
 /// struct TestGenerator;
 ///

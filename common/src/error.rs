@@ -1,4 +1,4 @@
-// Copyright 2017 rust-hyper-multipart-rfc7578 Developers
+// Copyright 2017 rust-multipart-rfc7578 Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
@@ -7,9 +7,6 @@
 //
 
 use std::{error::Error as StdError, fmt, io::Error as IoError};
-
-#[cfg(feature = "actix")]
-use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 
 #[derive(Debug)]
 pub enum Error {
@@ -42,15 +39,6 @@ impl StdError for Error {
             Error::HeaderWrite(ref e) => Some(e),
             Error::BoundaryWrite(ref e) => Some(e),
             Error::ContentRead(ref e) => Some(e),
-        }
-    }
-}
-
-#[cfg(feature = "actix")]
-impl ResponseError for Error {
-    fn error_response(&self) -> HttpResponse {
-        match *self {
-            _ => HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }

@@ -1,30 +1,7 @@
-[package]
-name              = "hyper-multipart-rfc7578"
-description       = "An implementation of multipart/form-data (RFC7578) for Hyper"
-authors           = ["Ferris Tseng <ferristseng@fastmail.fm>"]
-documentation     = "https://docs.rs/hyper-multipart-rfc7578"
-repository        = "https://github.com/ferristseng/rust-hyper-multipart-rfc7578"
-keywords          = ["hyper", "multipart", "form", "http"]
-categories        = ["asynchronous", "web-programming"]
-version           = "0.2.0-alpha2"
-readme            = "README.md"
-license           = "MIT OR Apache-2.0"
+[workspace]
 
-[badges]
-travis-ci         = { repository = "ferristseng/rust-hyper-multipart-rfc7578" }
-
-[features]
-default           = ["hyper"]
-actix             = ["actix-web"]
-
-[dependencies]
-bytes             = "0.4"
-futures           = "0.1"
-http              = "0.1"
-hyper             = { version = "0.12", optional = true }
-mime              = "0.3"
-rand              = "0.5"
-actix-web         = { version = "0.7", optional = true }
-
-[dev-dependencies]
-hyper-tls         = "0.3"
+members = [
+  "actix",
+  "common",
+  "hyper"
+]

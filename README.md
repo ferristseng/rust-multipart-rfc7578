@@ -1,50 +1,43 @@
-## Rust Hyper Multipart (RFC 7578)
+[![Build Status](https://travis-ci.org/ferristseng/rust-multipart-rfc7578.svg?branch=master)](https://travis-ci.org/ferristseng/rust-multipart-rfc7578)
 
-[![Travis](https://img.shields.io/travis/ferristseng/rust-hyper-multipart-rfc7578.svg)](https://travis-ci.org/ferristseng/rust-hyper-multipart-rfc7578)
-[![Crates.io](https://img.shields.io/crates/v/hyper-multipart-rfc7578.svg)](https://crates.io/crates/hyper-multipart-rfc7578)
-[![Docs.rs](https://docs.rs/hyper-multipart-rfc7578/badge.svg)](https://docs.rs/hyper-multipart-rfc7578/)
+## Rust Multipart (RFC 7578) (0.1.0)
 
 This crate contains an implementation of the multipart/form-data media
-type described in [RFC 7578](https://tools.ietf.org/html/rfc7578) for
-hyper.
-
-Currently, only the client-side is implemented.
+type described in [RFC 7578](https://tools.ietf.org/html/rfc7578).
 
 ### Usage
 
+Add either the Hyper implementation or the Actix implementation to
+your Cargo.toml file:
+
+#### Actix:
+
 ```toml
 [dependencies]
-hyper-multipart-rfc7578 = "0.2.0-alpha2"
+actix-multipart-rfc7578 = "0.1.0"
 ```
 
-Because the name of this library is really wordy, I recommend shortening it:
+#### Hyper:
+
+```toml
+[dependencies]
+actix-multipart-rfc7578 = "0.1.0"
+```
+
+Then import:
 
 ```rust
-extern crate hyper_multipart_rfc7578 as hyper_multipart;
+extern crate actix_multipart_rfc7578 as multipart;
 ```
 
-Using this requires a hyper client compatible with the `multipart::Body`
-data structure (see the documentation for more detailed examples):
+OR
 
 ```rust
-
-use hyper::{Client, Request, rt::{self, Future}};
-use hyper_multipart_rfc7578::client::{self, multipart};
-
-let client = Client::new();
-let mut req_builder = Request::get("http://localhost/upload");
-let mut form = multipart::Form::default();
-
-form.add_text("test", "Hello World");
-let req = form.set_body(&mut req_builder).unwrap();
-
-rt::run(
-    client
-        .request(req)
-        .map(|_| println!("done..."))
-        .map_err(|_| println!("an error occurred")),
-);
+extern crate hyper_multipart_rfc7578 as multipart;
 ```
+
+See either the [Hyper documentation](https://docs.rs/hyper-multipart-rfc7578) or the
+[Actix documentation](https://docs.rs/actix-multipart-rfc7578) for more details.
 
 
 ## Note on Server Implementation
