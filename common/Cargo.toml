@@ -22,5 +22,6 @@ mime                      = "0.3"
 rand                      = "0.5"
 
 [dev-dependencies]
+actix-multipart-rfc7578   = { path = "../actix" }
 hyper                     = "*"
 hyper-multipart-rfc7578   = { path = "../hyper" }

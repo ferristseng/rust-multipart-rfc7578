@@ -21,6 +21,12 @@
 //! actix-multipart-rfc7578 = "0.1.0"
 //! ```
 //!
+//! and import:
+//!
+//! ```rust
+//! extern crate actix_multipart_rfc7578 as multipart;
+//! ```
+//!
 //! ### Hyper:
 //!
 //! ```toml
@@ -28,20 +34,11 @@
 //! actix-multipart-rfc7578 = "0.1.0"
 //! ```
 //!
-//! Then import:
-//!
-//! ```rust
-//! extern crate actix_multipart_rfc7578 as multipart;
-//! ```
-//!
-//! OR
+//! and import:
 //!
 //! ```rust
 //! extern crate hyper_multipart_rfc7578 as multipart;
 //! ```
-//!
-//! See either the [Hyper documentation](https://docs.rs/hyper-multipart-rfc7578) or the
-//! [Actix documentation](https://docs.rs/actix-multipart-rfc7578) for more details.
 //!
 
 extern crate bytes;
