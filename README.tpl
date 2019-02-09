@@ -1,6 +1,14 @@
 {{badges}}
 
-## Rust Multipart (RFC 7578) ({{version}})
+## Rust Multipart (RFC 7578)
+
+### Components
+
+| Name   | Documentation                                  | Crate                                             |
+| ------ | -----------------------------------------------| ------------------------------------------------- |
+| common | [![Docs][common docs badge]][common docs link] | [![Crate][common crate badge]][common crate link] |
+| actix  | [![Docs][actix docs badge]][actix docs link]   | [![Crate][actix crate badge]][actix crate link]   |
+| hyper  | [![Docs][hyper docs badge]][hyper docs link]   | [![Crate][hyper crate badge]][hyper crate link]   |
 
 {{readme}}
 
@@ -28,3 +36,16 @@ at your option.
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+[common docs badge]: https://docs.rs/common-multipart-rfc7578/badge.svg "common-multipart-rfc7578 documentation"
+[common docs link]: https://docs.rs/common-multipart-rfc7578
+[common crate badge]: https://img.shields.io/crates/v/common-multipart-rfc7578.svg "common-multipart-rfc7578 crates.io"
+[common crate link]: https://crates.io/crates/common-multipart-rfc7578
+[actix docs badge]: https://docs.rs/actix-multipart-rfc7578/badge.svg "actix-multipart-rfc7578 documentation"
+[actix docs link]: https://docs.rs/actix-multipart-rfc7578
+[actix crate badge]: https://img.shields.io/crates/v/actix-multipart-rfc7578.svg "actix-multipart-rfc7578 crates.io"
+[actix docs link]: https://crates.io/crates/actix-multipart-rfc7578
+[hyper docs badge]: https://docs.rs/hyper-multipart-rfc7578/badge.svg "hyper-multipart-rfc7578 documentation"
+[hyper docs link]: https://docs.rs/hyper-multipart-rfc7578
+[hyper crate badge]: https://img.shields.io/crates/v/hyper-multipart-rfc7578.svg "hyper-multipart-rfc7578 crates.io"
+[hyper docs link]: https://crates.io/crates/hyper-multipart-rfc7578
