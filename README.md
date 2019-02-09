@@ -77,8 +77,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [actix docs badge]: https://docs.rs/actix-multipart-rfc7578/badge.svg "actix-multipart-rfc7578 documentation"
 [actix docs link]: https://docs.rs/actix-multipart-rfc7578
 [actix crate badge]: https://img.shields.io/crates/v/actix-multipart-rfc7578.svg "actix-multipart-rfc7578 crates.io"
-[actix docs link]: https://crates.io/crates/actix-multipart-rfc7578
+[actix crate link]: https://crates.io/crates/actix-multipart-rfc7578
 [hyper docs badge]: https://docs.rs/hyper-multipart-rfc7578/badge.svg "hyper-multipart-rfc7578 documentation"
 [hyper docs link]: https://docs.rs/hyper-multipart-rfc7578
 [hyper crate badge]: https://img.shields.io/crates/v/hyper-multipart-rfc7578.svg "hyper-multipart-rfc7578 crates.io"
-[hyper docs link]: https://crates.io/crates/hyper-multipart-rfc7578
+[hyper crate link]: https://crates.io/crates/hyper-multipart-rfc7578
