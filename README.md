@@ -27,7 +27,7 @@ extern crate actix_multipart_rfc7578 as multipart;
 
 ```toml
 [dependencies]
-actix-multipart-rfc7578 = "0.1.0"
+hyper-multipart-rfc7578 = "0.3.0"
 ```
 
 and import:
