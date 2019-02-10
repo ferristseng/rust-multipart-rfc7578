@@ -42,6 +42,7 @@
 //!
 //! actix_web::actix::run(|| {
 //!     actix_web::client::get("http://localhost/upload")
+//!         .content_type(form.content_type())
 //!         .streaming(multipart::Body::from(form))
 //!         .unwrap()
 //!         .send()
