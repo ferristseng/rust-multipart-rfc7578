@@ -56,6 +56,7 @@ Please feel free to submit a pull request, I would gladly review it!
   * [abonander/multipart](https://github.com/abonander/multipart)
   * [abonander/multipart-async](https://crates.io/crates/multipart-async)
   * [mikedilger/formdata](https://github.com/mikedilger/formdata)
+  * [jeizsm/rust-multipart-rfc7578](https://github.com/jeizsm/rust-multipart-rfc7578)
 
 ## License
 
