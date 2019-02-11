@@ -491,13 +491,13 @@ impl<'a> Form<'a> {
     where
         I: From<Body<'a>> + Into<B>,
     {
-        let header = format!("multipart/form-data; boundary=\"{}\"", &self.boundary);
-
-        let header: &str = header.as_ref();
-
-        req.header(CONTENT_TYPE, header);
+        req.header(CONTENT_TYPE, self.content_type().as_str());
 
         req.body(I::from(Body::from(self)).into())
+    }
+
+    pub fn content_type(&self) -> String {
+        format!("multipart/form-data; boundary=\"{}\"", &self.boundary)
     }
 }
 

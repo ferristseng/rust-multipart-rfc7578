@@ -24,6 +24,7 @@ fn main() {
 
     actix_web::actix::run(|| {
         client::post(addr)
+            .content_type(form.content_type())
             .streaming(multipart::Body::from(form))
             .unwrap()
             .send()
