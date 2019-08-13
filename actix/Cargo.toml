@@ -15,7 +15,7 @@ travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" 
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
-actix-web                 = "0.7"
+actix-web                 = "1.0"
 bytes                     = "0.4"
 common-multipart-rfc7578  = { path = "../common", version = "0.1.0" }
 futures                   = "0.1"
