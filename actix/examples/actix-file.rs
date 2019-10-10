@@ -6,13 +6,14 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+extern crate actix;
 extern crate actix_multipart_rfc7578 as actix_multipart;
 extern crate actix_web;
 extern crate futures;
 
 use actix_multipart::client::multipart;
-use actix_web::client;
-use futures::future::Future;
+use actix_web::client::Client;
+use futures::future::{lazy, Future};
 
 fn main() {
     let addr = "http://127.0.0.1:9001";
@@ -22,14 +23,21 @@ fn main() {
     form.add_file("input", file!())
         .expect("source file path should exist");
 
-    actix_web::actix::run(|| {
-        client::post(addr)
-            .content_type(form.content_type())
-            .streaming(multipart::Body::from(form))
-            .unwrap()
-            .send()
-            .map(|_| println!("done..."))
-            .map_err(|_| println!("an error occurred"))
-            .then(|_| { actix_web::actix::System::current().stop(); Ok(()) })
-    });
+    actix::System::new("test")
+        .block_on(lazy(|| {
+            Client::default()
+                .post(addr)
+                .content_type(form.content_type())
+                .send_stream(multipart::Body::from(form))
+                .map_err(|err| {
+                    println!("an error occurred");
+                    err
+                })
+                .and_then(|_| {
+                    println!("done...");
+                    actix::System::current().stop();
+                    Ok(())
+                })
+        }))
+        .unwrap();
 }

@@ -6,7 +6,7 @@ documentation             = "https://docs.rs/actix-multipart-rfc7578"
 repository                = "https://github.com/ferristseng/rust-multipart-rfc7578"
 keywords                  = ["actix", "multipart", "form", "http"]
 categories                = ["asynchronous", "web-programming"]
-version                   = "0.1.0"
+version                   = "0.2.0"
 readme                    = "../README.md"
 license                   = "MIT OR Apache-2.0"
 
@@ -15,7 +15,8 @@ travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" 
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
-actix-web                 = "0.7"
+actix-web                 = "1"
+actix                     = "0.8"
 bytes                     = "0.4"
 common-multipart-rfc7578  = { path = "../common", version = "0.1.0" }
 futures                   = "0.1"
