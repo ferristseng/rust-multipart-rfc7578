@@ -28,11 +28,12 @@
 //! ## Example:
 //!
 //! ```rust
+//! # extern crate actix;
 //! # extern crate actix_web;
 //! # extern crate futures;
 //! # extern crate actix_multipart_rfc7578;
 //!
-//! use futures::Future;
+//! use futures::{Future, lazy};
 //! use actix_multipart_rfc7578::client::{self, multipart};
 //!
 //! # fn main() {
@@ -40,16 +41,20 @@
 //!
 //! form.add_text("test", "Hello World");
 //!
-//! actix_web::actix::run(|| {
-//!     actix_web::client::get("http://localhost/upload")
+//! actix::System::new("test").block_on(lazy(|| {
+//!     actix_web::client::Client::default().get("http://localhost/upload")
 //!         .content_type(form.content_type())
-//!         .streaming(multipart::Body::from(form))
-//!         .unwrap()
-//!         .send()
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred"))
-//!         .then(|_| { actix_web::actix::System::current().stop(); Ok(()) })
-//! });
+//!         .send_stream(multipart::Body::from(form))
+//!         .map_err(|err| {
+//!             println!("an error occurred");
+//!             err
+//!         })
+//!         .and_then(|_| {
+//!             println!("done...");
+//!             actix::System::current().stop();
+//!             Ok(())
+//!         })
+//! }));
 //! # }
 //! ```
 //!
