@@ -111,7 +111,7 @@ dependencies = [
  "actix 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-web 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "common-multipart-rfc7578 0.1.1",
+ "common-multipart-rfc7578 0.1.2",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -438,14 +438,14 @@ dependencies = [
 
 [[package]]
 name = "common-multipart-rfc7578"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "actix-multipart-rfc7578 0.2.0",
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper-multipart-rfc7578 0.3.0",
+ "hyper-multipart-rfc7578 0.3.1",
  "mime 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -762,10 +762,10 @@ dependencies = [
 
 [[package]]
 name = "hyper-multipart-rfc7578"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "common-multipart-rfc7578 0.1.1",
+ "common-multipart-rfc7578 0.1.2",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.35 (registry+https://github.com/rust-lang/crates.io-index)",
