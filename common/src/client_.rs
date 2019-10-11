@@ -47,7 +47,7 @@ pub struct Body<'a> {
 
     /// The active reader.
     ///
-    current: Option<Box<'a + Read + Send>>,
+    current: Option<Box<dyn 'a + Read + Send>>,
 
     /// The parts as an iterator. When the iterator stops
     /// yielding, the body is fully written.
@@ -137,7 +137,7 @@ impl<'a> Stream for Body<'a> {
         }
 
         let num = if let Some(ref mut read) = self.current {
-            let mut buf = writer.get_mut();
+            let buf = writer.get_mut();
             unsafe {
                 let num = read
                     .read(&mut buf.bytes_mut())
@@ -588,7 +588,7 @@ enum Inner<'a> {
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
     ///
-    Read(Box<'a + Read + Send>, Option<u64>),
+    Read(Box<dyn 'a + Read + Send>, Option<u64>),
 
     /// The `String` variant handles "text/plain" form data payloads.
     ///

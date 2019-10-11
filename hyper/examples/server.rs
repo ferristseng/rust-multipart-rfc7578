@@ -13,7 +13,7 @@ extern crate hyper;
 use futures::{Future, Stream};
 use hyper::{service::service_fn, Body, Request, Response, Server};
 
-type BoxFut = Box<Future<Item = Response<Body>, Error = hyper::Error> + Send>;
+type BoxFut = Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 
 fn index(req: Request<Body>) -> BoxFut {
     let res = req.into_body().concat2().map(|bod| {
