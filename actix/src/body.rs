@@ -9,7 +9,11 @@
 use bytes::Bytes;
 use common_multipart::client::multipart;
 use error::Error;
-use futures::{Poll, Stream};
+use futures::{
+    task::{Context, Poll},
+    Stream,
+};
+use std::pin::Pin;
 
 /// Wraps a
 /// [`common_multipart::client::multipart::Body`] and makes it compatible with Actix.
@@ -24,14 +28,17 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
 }
 
 impl<'a> Stream for Body<'a> {
-    type Item = Bytes;
-
-    type Error = Error;
+    type Item = Result<Bytes, Error>;
 
     #[inline]
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        let Body(ref mut inner) = self;
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        let Body(ref mut inner) = Pin::into_inner(self);
 
-        inner.poll().map_err(|e| Error::MultipartError(e))
+        match Pin::new(inner).poll_next(cx) {
+            Poll::Ready(Some(Ok(t))) => Poll::Ready(Some(Ok(t))),
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(Error::MultipartError(e)))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
     }
 }

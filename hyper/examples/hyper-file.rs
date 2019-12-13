@@ -6,13 +6,10 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate hyper;
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
 
-use hyper::{
-    rt::{self, Future},
-    Client, Request,
-};
+use futures::TryFutureExt;
+use hyper::{Client, Request};
 use hyper_multipart::client::multipart;
 
 fn main() {
@@ -29,14 +26,15 @@ fn main() {
     form.add_file("input", file!())
         .expect("source file path should exist");
 
-    let mut req_builder = Request::post(addr);
+    let req_builder = Request::post(addr);
 
-    let req = form.set_body::<multipart::Body>(&mut req_builder).unwrap();
+    let req = form.set_body::<multipart::Body>(req_builder).unwrap();
 
-    rt::run(
+    futures::executor::block_on(
         client
             .request(req)
-            .map(|_| println!("done..."))
+            .map_ok(|_| println!("done..."))
             .map_err(|_| println!("an error occurred")),
-    );
+    )
+    .unwrap();
 }

@@ -41,22 +41,16 @@
 //! ```
 //!
 
-extern crate bytes;
-extern crate futures;
-extern crate http;
-extern crate mime;
-extern crate rand;
-
 mod client_;
 mod error;
 
 pub mod client {
-    pub use error::Error;
+    pub use crate::error::Error;
 
     /// This module contains data structures for building a multipart/form
     /// body to send a server.
     ///
     pub mod multipart {
-        pub use client_::{Body, BoundaryGenerator, Form};
+        pub use crate::client_::{Body, BoundaryGenerator, Form};
     }
 }

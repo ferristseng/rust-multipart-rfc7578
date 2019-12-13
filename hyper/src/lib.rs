@@ -33,13 +33,14 @@
 //! # extern crate hyper;
 //! # extern crate hyper_multipart_rfc7578 as hyper_multipart;
 //!
+//! use futures::TryFutureExt;
 //! use hyper::{
-//!     rt::{self, Future},
 //!     Client, Request,
 //! };
 //! use hyper_multipart::client::{self, multipart};
 //!
-//! # fn main() {
+//! #[tokio::main]
+//! async fn main() {
 //! let client = Client::builder().build_http();
 //! let mut form = multipart::Form::default();
 //!
@@ -47,15 +48,16 @@
 //!
 //! let mut req_builder = Request::get("http://localhost/upload");
 //!
-//! let req = form.set_body::<multipart::Body>(&mut req_builder).unwrap();
+//! let req = form.set_body::<multipart::Body>(req_builder).unwrap();
 //!
-//! rt::run(
-//!     client
-//!         .request(req)
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred")),
-//! );
-//! # }
+//!
+//! client
+//!       .request(req)
+//!       .map_ok(|_| println!("done..."))
+//!       .map_err(|e| println!("an error occurred {}", e))
+//!       .await
+//!       .ok();
+//! }
 //! ```
 //!
 //! With a default client:
@@ -64,13 +66,14 @@
 //! # extern crate hyper;
 //! # extern crate hyper_multipart_rfc7578 as hyper_multipart;
 //!
+//! use futures::TryFutureExt;
 //! use hyper::{
-//!     rt::{self, Future},
 //!     Client, Request,
 //! };
 //! use hyper_multipart::client::{self, multipart};
 //!
-//! # fn main() {
+//! #[tokio::main]
+//! async fn main() {
 //! let client = Client::new();
 //! let mut form = multipart::Form::default();
 //!
@@ -78,23 +81,20 @@
 //!
 //! let mut req_builder = Request::get("http://localhost/upload");
 //!
-//! let req = form.set_body_convert::<hyper::Body, multipart::Body>(&mut req_builder)
+//! let req = form.set_body_convert::<hyper::Body, multipart::Body>(req_builder)
 //!     .unwrap();
 //!
-//! rt::run(
-//!     client
-//!         .request(req)
-//!         .map(|_| println!("done..."))
-//!         .map_err(|_| println!("an error occurred")),
-//! );
-//! # }
+//! client
+//!       .request(req)
+//!       .map_ok(|_| println!("done..."))
+//!       .map_err(|e| println!("an error occurred {}", e))
+//!       .await
+//!       .ok();
+//! }
 //! ```
 //!
 
-extern crate bytes;
 extern crate common_multipart_rfc7578 as common_multipart;
-extern crate futures;
-extern crate hyper;
 
 mod body;
 
@@ -102,7 +102,7 @@ pub mod client {
     pub use common_multipart::client::Error;
 
     pub mod multipart {
-        pub use body::Body;
+        pub use crate::body::Body;
         pub use common_multipart::client::multipart::{BoundaryGenerator, Form};
     }
 }
