@@ -23,6 +23,6 @@ mime                      = "0.3"
 rand                      = "0.5"
 
 [dev-dependencies]
-actix-multipart-rfc7578   = { version = "0.3-rc", path = "../actix" }
+actix-multipart-rfc7578   = { version = "0.3.0-rc", path = "../actix" }
 hyper                     = "0.13"
-hyper-multipart-rfc7578   = { version = "0.4-rc", path = "../hyper" }
+hyper-multipart-rfc7578   = { version = "0.4.0-rc", path = "../hyper" }

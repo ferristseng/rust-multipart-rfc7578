@@ -19,7 +19,7 @@ maintenance               = { status = "passively-maintained" }
 actix-web                 = "2.0.0-rc"
 actix-http                = "1.0"
 bytes                     = "0.5"
-common-multipart-rfc7578  = { path = "../common", version = "0.2-rc" }
+common-multipart-rfc7578  = { path = "../common", version = "0.2.0-rc" }
 futures                   = "0.3"
 
 [dev-dependencies]
