@@ -17,6 +17,10 @@ maintenance               = { status = "passively-maintained" }
 [dependencies]
 actix-web                 = "1"
 actix                     = "0.8"
-bytes                     = "0.4"
+bytes                     = "0.5"
 common-multipart-rfc7578  = { path = "../common", version = "0.1.1" }
-futures                   = "0.1"
+futures                   = { version = "0.3", features = ["compat"] }
+
+[dev-dependencies]
+futures01                 = { version = "0.1", package = "futures" }
+

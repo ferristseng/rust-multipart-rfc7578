@@ -6,11 +6,14 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::{Bytes, IntoBuf};
+use bytes::BytesMut;
 use common_multipart::client::{multipart, Error};
-use futures::{stream::Stream, Async, Poll};
-use hyper::{self, body::Payload};
-use std::io::Cursor;
+use futures::stream::Stream;
+use http::{HeaderMap, HeaderValue};
+use hyper::{self, body::HttpBody};
+use std::iter::FromIterator;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 pub struct Body(multipart::Body<'static>);
 
@@ -30,21 +33,34 @@ impl From<multipart::Body<'static>> for Body {
     }
 }
 
-impl Payload for Body {
-    type Data = Cursor<Bytes>;
+impl HttpBody for Body {
+    type Data = BytesMut;
 
     type Error = Error;
 
     /// Implement `Payload` so `Body` can be used with a hyper client.
     ///
     #[inline]
-    fn poll_data(&mut self) -> Poll<Option<Self::Data>, Self::Error> {
-        let Body(inner) = self;
+    fn poll_data(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+    ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
+        let Body(inner) = Pin::into_inner(self);
 
-        match inner.poll() {
-            Ok(Async::Ready(read)) => Ok(Async::Ready(read.map(IntoBuf::into_buf))),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Err(e) => Err(e),
+        match Pin::new(inner).poll_next(cx) {
+            Poll::Ready(Some(Ok(read))) => {
+                Poll::Ready(Some(Ok(BytesMut::from_iter(read.into_iter()))))
+            }
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e))),
+            Poll::Ready(None) => Poll::Ready(None),
         }
+    }
+
+    fn poll_trailers(
+        self: Pin<&mut Self>,
+        _: &mut Context,
+    ) -> Poll<Result<Option<HeaderMap<HeaderValue>>, Self::Error>> {
+        Poll::Ready(Ok(None))
     }
 }

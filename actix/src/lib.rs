@@ -27,7 +27,7 @@
 //!
 //! ## Example:
 //!
-//! ```rust
+//! ```rust,ignore
 //! # extern crate actix;
 //! # extern crate actix_web;
 //! # extern crate futures;

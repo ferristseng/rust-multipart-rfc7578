@@ -10,19 +10,24 @@ extern crate futures;
 extern crate http;
 extern crate hyper;
 
-use futures::{Future, Stream};
-use hyper::{service::service_fn, Body, Request, Response, Server};
+use futures::Future;
+use futures::TryFutureExt;
+use hyper::{
+    service::{make_service_fn, service_fn},
+    Body, Request, Response, Server,
+};
+use std::pin::Pin;
 
-type BoxFut = Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send>;
+type BoxFut = Pin<Box<dyn Future<Output = Result<Response<Body>, hyper::Error>> + Send>>;
 
 fn index(req: Request<Body>) -> BoxFut {
-    let res = req.into_body().concat2().map(|bod| {
+    let res = hyper::body::to_bytes(req.into_body()).map_ok(|bod| {
         println!("{}", String::from_utf8_lossy(&bod));
 
         Response::new(Body::empty())
     });
 
-    Box::new(res)
+    Box::pin(res)
 }
 
 /// This example runs a server that prints requests as it receives them.
@@ -31,8 +36,10 @@ fn index(req: Request<Body>) -> BoxFut {
 fn main() {
     let addr = "127.0.0.1:9001".parse().unwrap();
     let server = Server::bind(&addr)
-        .serve(|| service_fn(index))
+        .serve(make_service_fn(|_| {
+            async { Ok::<_, hyper::Error>(service_fn(index)) }
+        }))
         .map_err(|e| eprintln!("{}", e));
 
-    hyper::rt::run(server);
+    futures::executor::block_on(server).unwrap();
 }

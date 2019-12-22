@@ -6,8 +6,11 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::{BufMut, Bytes, BytesMut};
-use futures::{stream::Stream, Async, Poll};
+use bytes::{
+    buf::{BufMutExt, IoSliceMut},
+    BufMut, Bytes, BytesMut,
+};
+use futures::{stream::Stream, task::Context, task::Poll};
 use http::{
     self,
     header::CONTENT_DISPOSITION,
@@ -17,6 +20,7 @@ use http::{
 use mime::{self, Mime};
 use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
 use std::borrow::Borrow;
+use std::pin::Pin;
 use std::{
     fmt::Display,
     fs::File,
@@ -27,7 +31,7 @@ use std::{
     vec::IntoIter,
 };
 
-use error::Error;
+use crate::error::Error;
 
 /// Writes a CLRF.
 ///
@@ -47,7 +51,7 @@ pub struct Body<'a> {
 
     /// The active reader.
     ///
-    current: Option<Box<dyn 'a + Read + Send>>,
+    current: Option<Box<dyn 'a + Read + Send + Sync>>,
 
     /// The parts as an iterator. When the iterator stops
     /// yielding, the body is fully written.
@@ -105,13 +109,11 @@ impl<'a> Body<'a> {
 }
 
 impl<'a> Stream for Body<'a> {
-    type Item = Bytes;
-
-    type Error = Error;
+    type Item = Result<Bytes, Error>;
 
     /// Iterate over each form part, and write it out.
     ///
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let bytes = BytesMut::with_capacity(self.buf_size);
         let mut writer = bytes.writer();
 
@@ -132,18 +134,17 @@ impl<'a> Stream for Body<'a> {
                 // No current part, and no parts left means there is nothing
                 // left to write.
                 //
-                return Ok(Async::Ready(None));
+                return Poll::Ready(None);
             }
         }
 
         let num = if let Some(ref mut read) = self.current {
-            let buf = writer.get_mut();
+            let slice = IoSliceMut::from(writer.get_mut().bytes_mut());
             unsafe {
-                let num = read
-                    .read(&mut buf.bytes_mut())
-                    .map_err(Error::ContentRead)?;
+                let mut slice: std::io::IoSliceMut = std::mem::transmute(slice);
+                let num = read.read(&mut slice).map_err(Error::ContentRead)?;
 
-                buf.advance_mut(num);
+                writer.get_mut().advance_mut(num);
 
                 num
             }
@@ -164,12 +165,12 @@ impl<'a> Stream for Body<'a> {
                 self.write_final_boundary(&mut writer)
                     .map_err(Error::BoundaryWrite)?;
 
-                Ok(Async::Ready(Some(writer.into_inner().freeze())))
+                Poll::Ready(Some(Ok(writer.into_inner().freeze())))
             } else {
-                self.poll()
+                self.poll_next(cx)
             }
         } else {
-            Ok(Async::Ready(Some(writer.into_inner().freeze())))
+            Poll::Ready(Some(Ok(writer.into_inner().freeze())))
         }
     }
 }
@@ -274,7 +275,7 @@ impl<'a> Form<'a> {
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
-        R: 'a + Read + Send,
+        R: 'a + Read + Send + Sync,
     {
         let read = Box::new(read);
 
@@ -325,7 +326,7 @@ impl<'a> Form<'a> {
     where
         F: Display,
         G: Into<String>,
-        R: 'a + Read + Send,
+        R: 'a + Read + Send + Sync,
     {
         let read = Box::new(read);
 
@@ -355,7 +356,7 @@ impl<'a> Form<'a> {
     where
         F: Display,
         G: Into<String>,
-        R: 'a + Read + Send,
+        R: 'a + Read + Send + Sync,
     {
         let read = Box::new(read);
 
@@ -452,12 +453,12 @@ impl<'a> Form<'a> {
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body::<multipart::Body>(&mut req_builder).unwrap();
+    /// let req = form.set_body::<multipart::Body>(req_builder).unwrap();
     /// # }
     /// ```
     ///
     #[inline]
-    pub fn set_body<B>(self, req: &mut Builder) -> Result<Request<B>, http::Error>
+    pub fn set_body<B>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         B: From<Body<'a>>,
     {
@@ -472,9 +473,6 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate hyper;
-    /// # extern crate hyper_multipart_rfc7578;
-    /// #
     /// use hyper::{Body, Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
@@ -483,17 +481,16 @@ impl<'a> Form<'a> {
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body_convert::<hyper::Body, multipart::Body>(&mut req_builder).unwrap();
+    /// let req = form.set_body_convert::<hyper::Body, multipart::Body>(req_builder).unwrap();
     /// # }
     /// ```
     ///
-    pub fn set_body_convert<B, I>(self, req: &mut Builder) -> Result<Request<B>, http::Error>
+    pub fn set_body_convert<B, I>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         I: From<Body<'a>> + Into<B>,
     {
-        req.header(CONTENT_TYPE, self.content_type().as_str());
-
-        req.body(I::from(Body::from(self)).into())
+        req.header(CONTENT_TYPE, self.content_type().as_str())
+            .body(I::from(Body::from(self)).into())
     }
 
     pub fn content_type(&self) -> String {
@@ -588,7 +585,7 @@ enum Inner<'a> {
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
     ///
-    Read(Box<dyn 'a + Read + Send>, Option<u64>),
+    Read(Box<dyn 'a + Read + Send + Sync>, Option<u64>),
 
     /// The `String` variant handles "text/plain" form data payloads.
     ///
@@ -605,16 +602,6 @@ impl<'a> Inner<'a> {
         match *self {
             Inner::Read(_, _) => mime::APPLICATION_OCTET_STREAM,
             Inner::Text(_) => mime::TEXT_PLAIN,
-        }
-    }
-
-    /// Returns the length of the inner type.
-    ///
-    #[inline]
-    fn len(&self) -> Option<u64> {
-        match *self {
-            Inner::Read(_, len) => len,
-            Inner::Text(ref s) => Some(s.len() as u64),
         }
     }
 }
