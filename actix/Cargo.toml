@@ -6,7 +6,7 @@ documentation             = "https://docs.rs/actix-multipart-rfc7578"
 repository                = "https://github.com/ferristseng/rust-multipart-rfc7578"
 keywords                  = ["actix", "multipart", "form", "http"]
 categories                = ["asynchronous", "web-programming"]
-version                   = "0.2.0"
+version                   = "0.3.0"
 readme                    = "../README.md"
 license                   = "MIT OR Apache-2.0"
 edition                   = "2018"
@@ -19,8 +19,8 @@ maintenance               = { status = "passively-maintained" }
 actix-web                 = "2.0.0-rc"
 actix-http                = "1.0"
 bytes                     = "0.5"
-common-multipart-rfc7578  = { path = "../common", version = "0.1.1" }
-futures                   = { version = "0.3", features = ["compat"] }
+common-multipart-rfc7578  = { path = "../common", version = "0.2" }
+futures                   = "0.3"
 
 [dev-dependencies]
 actix-rt                  = "1.0"
