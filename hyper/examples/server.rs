@@ -36,8 +36,8 @@ fn index(req: Request<Body>) -> BoxFut {
 fn main() {
     let addr = "127.0.0.1:9001".parse().unwrap();
     let server = Server::bind(&addr)
-        .serve(make_service_fn(|_| {
-            async { Ok::<_, hyper::Error>(service_fn(index)) }
+        .serve(make_service_fn(|_| async {
+            Ok::<_, hyper::Error>(service_fn(index))
         }))
         .map_err(|e| eprintln!("{}", e));
 
