@@ -8,7 +8,6 @@
 
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
 
-use futures::TryFutureExt;
 use hyper::{Client, Request};
 use hyper_multipart::client::multipart;
 
@@ -34,6 +33,6 @@ async fn main() {
     if let Ok(_) = client.request(req).await {
         println!("done...");
     } else {
-        println!("an error occurred");
+        eprintln!("an error occurred");
     }
 }

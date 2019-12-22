@@ -35,7 +35,6 @@ impl From<multipart::Body<'static>> for Body {
 
 impl HttpBody for Body {
     type Data = BytesMut;
-
     type Error = Error;
 
     /// Implement `Payload` so `Body` can be used with a hyper client.
