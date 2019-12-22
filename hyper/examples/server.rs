@@ -6,40 +6,32 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate futures;
-extern crate http;
-extern crate hyper;
-
-use futures::Future;
-use futures::TryFutureExt;
+use futures::{Future, TryFutureExt};
 use hyper::{
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
-use std::pin::Pin;
+use std::{convert::Infallible, net::SocketAddr};
 
-type BoxFut = Pin<Box<dyn Future<Output = Result<Response<Body>, hyper::Error>> + Send>>;
-
-fn index(req: Request<Body>) -> BoxFut {
-    let res = hyper::body::to_bytes(req.into_body()).map_ok(|bod| {
+fn index(req: Request<Body>) -> impl Future<Output = Result<Response<Body>, hyper::Error>> {
+    hyper::body::to_bytes(req.into_body()).map_ok(|bod| {
         println!("{}", String::from_utf8_lossy(&bod));
 
         Response::new(Body::empty())
-    });
-
-    Box::pin(res)
+    })
 }
 
 /// This example runs a server that prints requests as it receives them.
 /// It is useful for debugging.
 ///
-fn main() {
-    let addr = "127.0.0.1:9001".parse().unwrap();
-    let server = Server::bind(&addr)
-        .serve(make_service_fn(|_| {
-            async { Ok::<_, hyper::Error>(service_fn(index)) }
-        }))
-        .map_err(|e| eprintln!("{}", e));
+#[tokio::main]
+async fn main() {
+    let addr = SocketAddr::from(([127, 0, 0, 1], 9001));
+    let server = Server::bind(&addr).serve(make_service_fn(|_| async {
+        Ok::<_, Infallible>(service_fn(index))
+    }));
 
-    futures::executor::block_on(server).unwrap();
+    if let Err(e) = server.await {
+        eprintln!("Server Error: {}", e);
+    }
 }

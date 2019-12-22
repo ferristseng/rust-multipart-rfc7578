@@ -8,11 +8,11 @@
 
 extern crate hyper_multipart_rfc7578 as hyper_multipart;
 
-use futures::TryFutureExt;
 use hyper::{Client, Request};
 use hyper_multipart::client::multipart;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let addr = "http://127.0.0.1:9001";
     let client = Client::builder().keep_alive(false).build_http();
 
@@ -30,11 +30,9 @@ fn main() {
 
     let req = form.set_body::<multipart::Body>(req_builder).unwrap();
 
-    futures::executor::block_on(
-        client
-            .request(req)
-            .map_ok(|_| println!("done..."))
-            .map_err(|_| println!("an error occurred")),
-    )
-    .unwrap();
+    if let Ok(_) = client.request(req).await {
+        println!("done...");
+    } else {
+        eprintln!("an error occurred");
+    }
 }

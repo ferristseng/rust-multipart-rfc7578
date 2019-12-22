@@ -6,6 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+use crate::error::Error;
 use bytes::{
     buf::{BufMutExt, IoSliceMut},
     BufMut, Bytes, BytesMut,
@@ -13,25 +14,25 @@ use bytes::{
 use futures::{stream::Stream, task::Context, task::Poll};
 use http::{
     self,
-    header::CONTENT_DISPOSITION,
-    header::CONTENT_TYPE,
+    header::{self, HeaderName},
     request::{Builder, Request},
 };
 use mime::{self, Mime};
 use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
-use std::borrow::Borrow;
-use std::pin::Pin;
 use std::{
+    borrow::Borrow,
     fmt::Display,
     fs::File,
     io::{self, Cursor, Read, Write},
     iter::{FromIterator, Peekable},
     path::Path,
+    pin::Pin,
     str::FromStr,
     vec::IntoIter,
 };
 
-use crate::error::Error;
+static CONTENT_DISPOSITION: HeaderName = header::CONTENT_DISPOSITION;
+static CONTENT_TYPE: HeaderName = header::CONTENT_TYPE;
 
 /// Writes a CLRF.
 ///
@@ -442,19 +443,14 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate hyper;
-    /// # extern crate hyper_multipart_rfc7578;
-    /// #
     /// use hyper::{Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
-    /// # fn main() {
     /// let mut req_builder = Request::post("http://localhost:80/upload");
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
     /// let req = form.set_body::<multipart::Body>(req_builder).unwrap();
-    /// # }
     /// ```
     ///
     #[inline]
@@ -476,20 +472,18 @@ impl<'a> Form<'a> {
     /// use hyper::{Body, Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
-    /// # fn main() {
     /// let mut req_builder = Request::post("http://localhost:80/upload");
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
     /// let req = form.set_body_convert::<hyper::Body, multipart::Body>(req_builder).unwrap();
-    /// # }
     /// ```
     ///
     pub fn set_body_convert<B, I>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         I: From<Body<'a>> + Into<B>,
     {
-        req.header(CONTENT_TYPE, self.content_type().as_str())
+        req.header(&CONTENT_TYPE, self.content_type().as_str())
             .body(I::from(Body::from(self)).into())
     }
 
@@ -566,8 +560,8 @@ impl<'a> Part<'a> {
         let content_type = format!("{}", mime.unwrap_or_else(|| inner.default_content_type()));
 
         Part {
-            inner: inner,
-            content_type: content_type,
+            inner,
+            content_type,
             content_disposition: format!("form-data; {}", disposition_params.join("; ")),
         }
     }
