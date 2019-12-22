@@ -6,6 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+use crate::error::Error;
 use bytes::{
     buf::{BufMutExt, IoSliceMut},
     BufMut, Bytes, BytesMut,
@@ -19,19 +20,17 @@ use http::{
 };
 use mime::{self, Mime};
 use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
-use std::borrow::Borrow;
-use std::pin::Pin;
 use std::{
+    borrow::Borrow,
     fmt::Display,
     fs::File,
     io::{self, Cursor, Read, Write},
     iter::{FromIterator, Peekable},
     path::Path,
+    pin::Pin,
     str::FromStr,
     vec::IntoIter,
 };
-
-use crate::error::Error;
 
 /// Writes a CLRF.
 ///

@@ -59,19 +59,16 @@
 //! ```
 //!
 
-extern crate actix_web;
-extern crate bytes;
 extern crate common_multipart_rfc7578 as common_multipart;
-extern crate futures;
 
 mod body;
 mod error;
 
 pub mod client {
-    pub use error::Error;
+    pub use crate::error::Error;
 
     pub mod multipart {
-        pub use body::Body;
+        pub use crate::body::Body;
         pub use common_multipart::client::multipart::{BoundaryGenerator, Form};
     }
 }

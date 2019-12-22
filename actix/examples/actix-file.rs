@@ -6,21 +6,13 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate actix;
 extern crate actix_multipart_rfc7578 as actix_multipart;
-extern crate actix_web;
-extern crate bytes;
-extern crate futures;
-extern crate futures01;
 
 use actix_multipart::client::multipart;
 use actix_web::client::Client;
-use bytes::buf::Buf;
-use futures::stream::TryStreamExt;
-use futures01::future::{lazy, Future};
-use futures01::Stream;
 
-fn main() {
+#[actix_rt::main]
+async fn main() {
     let addr = "http://127.0.0.1:9001";
     let mut form = multipart::Form::default();
 
@@ -28,25 +20,15 @@ fn main() {
     form.add_file("input", file!())
         .expect("source file path should exist");
 
-    actix::System::new("test")
-        .block_on(lazy(|| {
-            Client::default()
-                .post(addr)
-                .content_type(form.content_type())
-                .send_stream(
-                    multipart::Body::from(form)
-                        .compat()
-                        .map(|bytes| actix_web::web::Bytes::from(bytes.bytes())),
-                )
-                .map_err(|err| {
-                    println!("an error occurred");
-                    err
-                })
-                .and_then(|_| {
-                    println!("done...");
-                    actix::System::current().stop();
-                    Ok(())
-                })
-        }))
-        .unwrap();
+    let response = Client::default()
+        .post(addr)
+        .content_type(form.content_type())
+        .send_body(multipart::Body::from(form))
+        .await;
+
+    if let Ok(_) = response {
+        println!("done...");
+    } else {
+        eprintln!("an error occurred");
+    }
 }

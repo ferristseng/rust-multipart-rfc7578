@@ -9,18 +9,18 @@ categories                = ["asynchronous", "web-programming"]
 version                   = "0.2.0"
 readme                    = "../README.md"
 license                   = "MIT OR Apache-2.0"
+edition                   = "2018"
 
 [badges]
 travis-ci                 = { repository = "ferristseng/rust-multipart-rfc7578" }
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
-actix-web                 = "1"
-actix                     = "0.8"
+actix-web                 = "2.0.0-rc"
+actix-http                = "1.0"
 bytes                     = "0.5"
 common-multipart-rfc7578  = { path = "../common", version = "0.1.1" }
 futures                   = { version = "0.3", features = ["compat"] }
 
 [dev-dependencies]
-futures01                 = { version = "0.1", package = "futures" }
-
+actix-rt                  = "1.0"
