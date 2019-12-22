@@ -9,7 +9,7 @@
 extern crate actix_multipart_rfc7578 as actix_multipart;
 
 use actix_multipart::client::multipart;
-use actix_web::client::Client;
+use awc::Client;
 
 #[actix_rt::main]
 async fn main() {

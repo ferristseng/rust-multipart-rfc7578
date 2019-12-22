@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! actix-multipart-rfc7578 = "0.3.0"
+//! actix-multipart-rfc7578 = "0.3"
 //! ```
 //!
 //! Import the crate:
@@ -29,7 +29,7 @@
 //!
 //! ```rust
 //! use actix_multipart_rfc7578::client::{self, multipart};
-//! use actix_web::client::Client;
+//! use awc::Client;
 //!
 //! #[actix_rt::main]
 //! async fn main() {

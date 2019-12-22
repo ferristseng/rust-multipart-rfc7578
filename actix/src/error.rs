@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use actix_web::ResponseError;
+use actix_http::error::ResponseError;
 use common_multipart;
 use std::{error::Error as StdError, fmt};
 

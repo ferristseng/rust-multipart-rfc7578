@@ -11,7 +11,7 @@ use bytes::{
     buf::{BufMutExt, IoSliceMut},
     BufMut, Bytes, BytesMut,
 };
-use futures::{stream::Stream, task::Context, task::Poll};
+use futures::{stream::Stream, task::{Context, Poll}};
 use http::{
     self,
     header::{self, HeaderName},

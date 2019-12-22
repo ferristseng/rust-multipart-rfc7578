@@ -7,7 +7,7 @@
 //
 
 use crate::error::Error;
-use actix_web::dev::{Body as ActixBody, BodySize, MessageBody};
+use actix_http::body::{Body as ActixBody, BodySize, MessageBody};
 use bytes::Bytes;
 use common_multipart::client::multipart;
 use futures::{
