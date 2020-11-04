@@ -28,7 +28,7 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
     }
 }
 
-impl Into<ActixBody> for Body<'static>  {
+impl Into<ActixBody> for Body<'static> {
     fn into(self) -> ActixBody {
         ActixBody::Message(Box::new(self))
     }
@@ -42,10 +42,10 @@ impl<'a> MessageBody for Body<'a> {
 
     #[inline]
     fn poll_next(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut Context,
     ) -> Poll<Option<Result<Bytes, actix_http::error::Error>>> {
-        let Body(ref mut inner) = self;
+        let Body(ref mut inner) = self.get_mut();
 
         match Stream::poll_next(Pin::new(inner), cx) {
             Poll::Ready(Some(Ok(bytes))) => Poll::Ready(Some(Ok(bytes))),
