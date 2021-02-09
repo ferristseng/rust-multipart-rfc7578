@@ -392,9 +392,7 @@ impl<'a> Form<'a> {
         F: Display,
     {
         let f = File::open(&path)?;
-        let mime = mime.or_else(|| {
-            mime_guess::from_path(&path).first()
-        });
+        let mime = mime.or_else(|| mime_guess::from_path(&path).first());
 
         let len = match f.metadata() {
             // If the path is not a file, it can't be uploaded because there
@@ -597,7 +595,10 @@ mod tests {
     use crate::error::Error;
     use bytes::BytesMut;
     use futures::TryStreamExt;
-    use std::{path::{Path, PathBuf}, io::Cursor};
+    use std::{
+        io::Cursor,
+        path::{Path, PathBuf},
+    };
 
     async fn form_output(form: Form<'_>) -> String {
         let result: Result<BytesMut, Error> = Body::from(form).try_concat().await;
@@ -612,7 +613,10 @@ mod tests {
 
     fn test_file_path() -> PathBuf {
         // common/src/data/test.txt
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("data").join("test.txt")
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("data")
+            .join("test.txt")
     }
 
     #[tokio::test]
@@ -656,7 +660,9 @@ mod tests {
     async fn add_file_with_mime_returns_expected_result() {
         let mut form = Form::default();
 
-        assert!(form.add_file_with_mime("test_file.txt", test_file_path(), mime::TEXT_CSV).is_ok());
+        assert!(form
+            .add_file_with_mime("test_file.txt", test_file_path(), mime::TEXT_CSV)
+            .is_ok());
 
         let data = form_output(form).await;
 
