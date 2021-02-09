@@ -8,7 +8,7 @@
 
 use crate::error::Error;
 use actix_http::body::{Body as ActixBody, BodySize, MessageBody};
-use bytes::Bytes;
+use bytes_5::Bytes as Bytes5;
 use common_multipart::client::multipart;
 use futures::{
     task::{Context, Poll},
@@ -28,7 +28,7 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
     }
 }
 
-impl Into<ActixBody> for Body<'static>  {
+impl Into<ActixBody> for Body<'static> {
     fn into(self) -> ActixBody {
         ActixBody::Message(Box::new(self))
     }
@@ -42,13 +42,18 @@ impl<'a> MessageBody for Body<'a> {
 
     #[inline]
     fn poll_next(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut Context,
-    ) -> Poll<Option<Result<Bytes, actix_http::error::Error>>> {
-        let Body(ref mut inner) = self;
+    ) -> Poll<Option<Result<Bytes5, actix_http::error::Error>>> {
+        let pinned = Pin::into_inner(self);
+        let Body(ref mut inner) = pinned;
 
         match Stream::poll_next(Pin::new(inner), cx) {
-            Poll::Ready(Some(Ok(bytes))) => Poll::Ready(Some(Ok(bytes))),
+            Poll::Ready(Some(Ok(bytes))) => {
+                let compat_bytes = Bytes5::copy_from_slice(bytes.as_ref());
+
+                Poll::Ready(Some(Ok(compat_bytes)))
+            }
             Poll::Ready(Some(Err(err))) => {
                 Poll::Ready(Some(Err(Error::MultipartError(err).into())))
             }

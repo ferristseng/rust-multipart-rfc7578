@@ -26,9 +26,12 @@ async fn main() {
         .send_body(multipart::Body::from(form))
         .await;
 
-    if let Ok(_) = response {
-        println!("done...");
-    } else {
-        eprintln!("an error occurred");
+    match response {
+        Ok(_) => {
+            println!("done...");
+        }
+        Err(err) => {
+            eprintln!("an error occurred: {:?}", err);
+        }
     }
 }
