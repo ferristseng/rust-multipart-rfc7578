@@ -7,7 +7,6 @@
 //
 
 use actix_http::error::ResponseError;
-use common_multipart;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
