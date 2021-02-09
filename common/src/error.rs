@@ -6,39 +6,17 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use std::{error::Error as StdError, fmt, io::Error as IoError};
+use std::io::Error as IoError;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Failed to write multipart header: {0:?}")]
     HeaderWrite(IoError),
+
+    #[error("Failed to write multipart boundary: {0:?}")]
     BoundaryWrite(IoError),
+
+    #[error("Failed to write multipart content: {0:?}")]
     ContentRead(IoError),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::HeaderWrite(ref e) => write!(f, "Error writing headers: {}", e),
-            Error::BoundaryWrite(ref e) => write!(f, "Error writing boundary: {}", e),
-            Error::ContentRead(ref e) => write!(f, "Error reading content: {}", e),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::HeaderWrite(_) => "Error writing headers",
-            Error::BoundaryWrite(_) => "Error writing boundary",
-            Error::ContentRead(_) => "Error reading content",
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn StdError> {
-        match *self {
-            Error::HeaderWrite(ref e) => Some(e),
-            Error::BoundaryWrite(ref e) => Some(e),
-            Error::ContentRead(ref e) => Some(e),
-        }
-    }
 }

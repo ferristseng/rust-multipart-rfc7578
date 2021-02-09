@@ -41,6 +41,7 @@
 //! ```
 //!
 
+mod boundary;
 mod client_;
 mod error;
 
@@ -51,6 +52,9 @@ pub mod client {
     /// body to send a server.
     ///
     pub mod multipart {
-        pub use crate::client_::{Body, BoundaryGenerator, Form};
+        pub use crate::{
+            boundary::BoundaryGenerator,
+            client_::{Body, Form},
+        };
     }
 }
