@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/ferristseng/rust-multipart-rfc7578/workflows/Rust/badge.svg)](https://github.com/ferristseng/rust-multipart-rfc7578/actions?query=workflow%3ARust)
+[![Build Status](https://github.com/ferristseng/rust-multipart-rfc7578/workflows/Rust/badge.svg?branch=master)](https://github.com/ferristseng/rust-multipart-rfc7578/actions?query=workflow%3ARust)
 
 ## Rust Multipart (RFC 7578)
 
