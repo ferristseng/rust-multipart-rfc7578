@@ -650,8 +650,6 @@ mod tests {
 
         let data = form_output(form).await;
 
-        println!("{}", data);
-
         assert!(data.contains("This is a test file!"));
         assert!(data.contains("text/plain"));
     }
