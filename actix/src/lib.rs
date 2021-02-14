@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! actix-multipart-rfc7578 = "0.3"
+//! actix-multipart-rfc7578 = "0.4"
 //! ```
 //!
 //! Import the crate:
