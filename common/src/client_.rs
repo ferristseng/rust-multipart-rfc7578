@@ -6,28 +6,28 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use crate::error::Error;
-use bytes::{
-    buf::{BufMutExt, IoSliceMut},
-    BufMut, Bytes, BytesMut,
+use crate::{
+    boundary::{BoundaryGenerator, RandomAsciiGenerator},
+    error::Error,
 };
-use futures::{stream::Stream, task::{Context, Poll}};
+use bytes::{BufMut, BytesMut};
+use futures::{
+    stream::Stream,
+    task::{Context, Poll},
+};
 use http::{
     self,
     header::{self, HeaderName},
     request::{Builder, Request},
 };
 use mime::{self, Mime};
-use rand::{distributions::Alphanumeric, rngs::SmallRng, FromEntropy, Rng};
 use std::{
-    borrow::Borrow,
     fmt::Display,
     fs::File,
     io::{self, Cursor, Read, Write},
-    iter::{FromIterator, Peekable},
+    iter::Peekable,
     path::Path,
     pin::Pin,
-    str::FromStr,
     vec::IntoIter,
 };
 
@@ -110,7 +110,7 @@ impl<'a> Body<'a> {
 }
 
 impl<'a> Stream for Body<'a> {
-    type Item = Result<Bytes, Error>;
+    type Item = Result<BytesMut, Error>;
 
     /// Iterate over each form part, and write it out.
     ///
@@ -140,15 +140,7 @@ impl<'a> Stream for Body<'a> {
         }
 
         let num = if let Some(ref mut read) = self.current {
-            let slice = IoSliceMut::from(writer.get_mut().bytes_mut());
-            unsafe {
-                let mut slice: std::io::IoSliceMut = std::mem::transmute(slice);
-                let num = read.read(&mut slice).map_err(Error::ContentRead)?;
-
-                writer.get_mut().advance_mut(num);
-
-                num
-            }
+            io::copy(read, &mut writer).map_err(Error::ContentRead)?
         } else {
             0
         };
@@ -166,12 +158,12 @@ impl<'a> Stream for Body<'a> {
                 self.write_final_boundary(&mut writer)
                     .map_err(Error::BoundaryWrite)?;
 
-                Poll::Ready(Some(Ok(writer.into_inner().freeze())))
+                Poll::Ready(Some(Ok(writer.into_inner())))
             } else {
                 self.poll_next(cx)
             }
         } else {
-            Poll::Ready(Some(Ok(writer.into_inner().freeze())))
+            Poll::Ready(Some(Ok(writer.into_inner())))
         }
     }
 }
@@ -400,11 +392,8 @@ impl<'a> Form<'a> {
         F: Display,
     {
         let f = File::open(&path)?;
-        let mime = if let Some(ext) = path.as_ref().extension() {
-            Mime::from_str(ext.to_string_lossy().borrow()).ok()
-        } else {
-            mime
-        };
+        let mime = mime.or_else(|| mime_guess::from_path(&path).first());
+
         let len = match f.metadata() {
             // If the path is not a file, it can't be uploaded because there
             // is no content.
@@ -600,41 +589,82 @@ impl<'a> Inner<'a> {
     }
 }
 
-/// A `BoundaryGenerator` is a policy to generate a random string to use
-/// as a part boundary.
-///
-/// The default generator will build a random string of 6 ascii characters.
-/// If you need more complexity, you can implement this, and use it with
-/// [`Form::new`].
-///
-/// # Examples
-///
-/// ```
-/// use common_multipart_rfc7578::client::multipart::BoundaryGenerator;
-///
-/// struct TestGenerator;
-///
-/// impl BoundaryGenerator for TestGenerator {
-///     fn generate_boundary() -> String {
-///         "test".to_string()
-///     }
-/// }
-/// ```
-pub trait BoundaryGenerator {
-    /// Generates a String to use as a boundary.
-    ///
-    fn generate_boundary() -> String;
-}
+#[cfg(test)]
+mod tests {
+    use super::{Body, Form};
+    use crate::error::Error;
+    use bytes::BytesMut;
+    use futures::TryStreamExt;
+    use std::{
+        io::Cursor,
+        path::{Path, PathBuf},
+    };
 
-struct RandomAsciiGenerator;
+    async fn form_output(form: Form<'_>) -> String {
+        let result: Result<BytesMut, Error> = Body::from(form).try_concat().await;
 
-impl BoundaryGenerator for RandomAsciiGenerator {
-    /// Creates a boundary of 6 ascii characters.
-    ///
-    fn generate_boundary() -> String {
-        let mut rng = SmallRng::from_entropy();
-        let ascii = rng.sample_iter(&Alphanumeric);
+        assert!(result.is_ok());
 
-        String::from_iter(ascii.take(6))
+        let bytes = result.unwrap();
+        let data = std::str::from_utf8(bytes.as_ref()).unwrap();
+
+        data.into()
+    }
+
+    fn test_file_path() -> PathBuf {
+        // common/src/data/test.txt
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("data")
+            .join("test.txt")
+    }
+
+    #[tokio::test]
+    async fn add_text_returns_expected_result() {
+        let mut form = Form::default();
+
+        form.add_text("test", "Hello World!");
+
+        let data = form_output(form).await;
+
+        assert!(data.contains("Hello World!"));
+    }
+
+    #[tokio::test]
+    async fn add_reader_returns_expected_result() {
+        let bytes = Cursor::new("Hello World!");
+        let mut form = Form::default();
+
+        form.add_reader("input", bytes);
+
+        let data = form_output(form).await;
+
+        assert!(data.contains("Hello World!"));
+    }
+
+    #[tokio::test]
+    async fn add_file_returns_expected_result() {
+        let mut form = Form::default();
+
+        assert!(form.add_file("test_file.txt", test_file_path()).is_ok());
+
+        let data = form_output(form).await;
+
+        assert!(data.contains("This is a test file!"));
+        assert!(data.contains("text/plain"));
+    }
+
+    #[tokio::test]
+    async fn add_file_with_mime_returns_expected_result() {
+        let mut form = Form::default();
+
+        assert!(form
+            .add_file_with_mime("test_file.txt", test_file_path(), mime::TEXT_CSV)
+            .is_ok());
+
+        let data = form_output(form).await;
+
+        assert!(data.contains("This is a test file!"));
+        assert!(data.contains("text/csv"));
     }
 }

@@ -7,34 +7,12 @@
 //
 
 use actix_http::error::ResponseError;
-use common_multipart;
-use std::{error::Error as StdError, fmt};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Failed to send multipart: {0:?}")]
     MultipartError(common_multipart::client::Error),
 }
 
 impl ResponseError for Error {}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::MultipartError(ref e) => e.fmt(f),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::MultipartError(ref cause) => cause.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn StdError> {
-        match *self {
-            Error::MultipartError(ref e) => Some(e),
-        }
-    }
-}

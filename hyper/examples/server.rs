@@ -14,6 +14,7 @@ use hyper::{
 use std::{convert::Infallible, net::SocketAddr};
 
 fn index(req: Request<Body>) -> impl Future<Output = Result<Response<Body>, hyper::Error>> {
+    println!("{:?}", req.headers());
     hyper::body::to_bytes(req.into_body()).map_ok(|bod| {
         println!("{}", String::from_utf8_lossy(&bod));
 

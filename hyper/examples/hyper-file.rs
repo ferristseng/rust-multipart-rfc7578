@@ -14,7 +14,7 @@ use hyper_multipart::client::multipart;
 #[tokio::main]
 async fn main() {
     let addr = "http://127.0.0.1:9001";
-    let client = Client::builder().keep_alive(false).build_http();
+    let client = Client::builder().build_http();
 
     println!("note: this must be run in the root of the project repository");
     println!("note: run this with the example server running");
@@ -30,9 +30,12 @@ async fn main() {
 
     let req = form.set_body::<multipart::Body>(req_builder).unwrap();
 
-    if let Ok(_) = client.request(req).await {
-        println!("done...");
-    } else {
-        eprintln!("an error occurred");
+    match client.request(req).await {
+        Ok(_) => {
+            println!("done...");
+        }
+        Err(err) => {
+            eprintln!("an error occurred: {:?}", err);
+        }
     }
 }

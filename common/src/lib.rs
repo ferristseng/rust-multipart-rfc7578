@@ -18,7 +18,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! actix-multipart-rfc7578 = "0.3"
+//! actix-multipart-rfc7578 = "0.4"
 //! ```
 //!
 //! and import:
@@ -31,7 +31,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hyper-multipart-rfc7578 = "0.4"
+//! hyper-multipart-rfc7578 = "0.5"
 //! ```
 //!
 //! and import:
@@ -41,6 +41,7 @@
 //! ```
 //!
 
+mod boundary;
 mod client_;
 mod error;
 
@@ -51,6 +52,9 @@ pub mod client {
     /// body to send a server.
     ///
     pub mod multipart {
-        pub use crate::client_::{Body, BoundaryGenerator, Form};
+        pub use crate::{
+            boundary::BoundaryGenerator,
+            client_::{Body, Form},
+        };
     }
 }
