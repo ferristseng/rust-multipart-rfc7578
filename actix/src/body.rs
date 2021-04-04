@@ -46,9 +46,7 @@ impl<'a> MessageBody for Body<'a> {
         let Body(ref mut inner) = pinned;
 
         match Stream::poll_next(Pin::new(inner), cx) {
-            Poll::Ready(Some(Ok(bytes))) => {
-                Poll::Ready(Some(Ok(bytes.freeze())))
-            }
+            Poll::Ready(Some(Ok(bytes))) => Poll::Ready(Some(Ok(bytes.freeze()))),
             Poll::Ready(Some(Err(err))) => {
                 Poll::Ready(Some(Err(Error::MultipartError(err).into())))
             }
