@@ -1,6 +1,7 @@
-## Rust Multipart (RFC 7578)
+[![Workflow Status](https://github.com/ferristseng/rust-multipart-rfc7578/workflows/Rust/badge.svg)](https://github.com/ferristseng/rust-multipart-rfc7578/actions?query=workflow%3A%22Rust%22)
+![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
 
-[![Build Status](https://github.com/ferristseng/rust-multipart-rfc7578/workflows/Rust/badge.svg?branch=master)](https://github.com/ferristseng/rust-multipart-rfc7578/actions?query=workflow%3ARust)
+## Rust Multipart (RFC 7578)
 
 ### Components
 

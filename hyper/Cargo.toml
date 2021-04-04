@@ -12,6 +12,7 @@ license                   = "MIT OR Apache-2.0"
 edition                   = "2018"
 
 [badges]
+github                    = { repository = "ferristseng/rust-multipart-rfc7578", workflow = "Rust" }
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
