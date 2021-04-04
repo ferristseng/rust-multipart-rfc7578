@@ -18,7 +18,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! actix-multipart-rfc7578 = "0.4"
+//! actix-multipart-rfc7578 = "0.5"
 //! ```
 //!
 //! and import:
