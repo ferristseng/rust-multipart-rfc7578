@@ -16,7 +16,7 @@ github                    = { repository = "ferristseng/rust-multipart-rfc7578",
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
-bytes                     = "1.0"
+bytes                     = "1.1"
 futures                   = "0.3"
 http                      = "0.2"
 mime                      = "0.3"
