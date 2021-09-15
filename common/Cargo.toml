@@ -28,4 +28,4 @@ thiserror                 = "1.0"
 actix-multipart-rfc7578   = { path = "../actix" }
 hyper                     = "0.14"
 hyper-multipart-rfc7578   = { path = "../hyper" }
-tokio                     = { version = "1.2", features = ["macros"] }
+tokio                     = { version = "1", features = ["macros"] }
