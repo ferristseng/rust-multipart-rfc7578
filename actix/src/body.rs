@@ -6,8 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use crate::error::Error;
-use actix_http::body::{Body as ActixBody, BodySize, MessageBody};
+use actix_http::body::{Body as ActixBody, BodySize, BoxAnyBody, MessageBody};
 use bytes::Bytes;
 use common_multipart::client::multipart;
 use futures::{
@@ -29,27 +28,24 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
 
 impl Into<ActixBody> for Body<'static> {
     fn into(self) -> ActixBody {
-        ActixBody::Message(Box::new(self))
+        ActixBody::Message(BoxAnyBody::from_body(self))
     }
 }
 
 impl<'a> MessageBody for Body<'a> {
+    type Error = common_multipart::client::Error;
+
     fn size(&self) -> BodySize {
         BodySize::Stream
     }
 
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
-    ) -> Poll<Option<Result<Bytes, actix_http::error::Error>>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Result<Bytes, Self::Error>>> {
         let pinned = Pin::into_inner(self);
         let Body(ref mut inner) = pinned;
 
         match Stream::poll_next(Pin::new(inner), cx) {
             Poll::Ready(Some(Ok(bytes))) => Poll::Ready(Some(Ok(bytes.freeze()))),
-            Poll::Ready(Some(Err(err))) => {
-                Poll::Ready(Some(Err(Error::MultipartError(err).into())))
-            }
+            Poll::Ready(Some(Err(err))) => Poll::Ready(Some(Err(err))),
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
         }
