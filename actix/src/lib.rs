@@ -57,10 +57,9 @@
 extern crate common_multipart_rfc7578 as common_multipart;
 
 mod body;
-mod error;
 
 pub mod client {
-    pub use crate::error::Error;
+    pub use common_multipart::client::Error;
 
     pub mod multipart {
         pub use crate::body::Body;
