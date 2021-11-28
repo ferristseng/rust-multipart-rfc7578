@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use actix_http::body::{Body as ActixBody, BodySize, BoxAnyBody, MessageBody};
+use actix_http::body::{AnyBody as ActixBody, BodySize, BoxBody, MessageBody};
 use bytes::Bytes;
 use common_multipart::client::multipart;
 use futures::{
@@ -28,7 +28,7 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
 
 impl Into<ActixBody> for Body<'static> {
     fn into(self) -> ActixBody {
-        ActixBody::Message(BoxAnyBody::from_body(self))
+        ActixBody::Body(BoxBody::from_body(self))
     }
 }
 
