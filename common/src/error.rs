@@ -20,3 +20,13 @@ pub enum Error {
     #[error("Failed to write multipart content: {0:?}")]
     ContentRead(IoError),
 }
+
+impl Into<IoError> for Error {
+    fn into(self) -> IoError {
+        match self {
+            Error::HeaderWrite(io) => io,
+            Error::BoundaryWrite(io) => io,
+            Error::ContentRead(io) => io
+        }
+    }
+}
