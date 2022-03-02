@@ -11,12 +11,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Failed to write multipart header: {0:?}")]
-    HeaderWrite(IoError),
-
-    #[error("Failed to write multipart boundary: {0:?}")]
-    BoundaryWrite(IoError),
-
     #[error("Failed to write multipart content: {0:?}")]
     ContentRead(IoError),
 }
@@ -24,9 +18,7 @@ pub enum Error {
 impl Into<IoError> for Error {
     fn into(self) -> IoError {
         match self {
-            Error::HeaderWrite(io) => io,
-            Error::BoundaryWrite(io) => io,
-            Error::ContentRead(io) => io
+            Error::ContentRead(io) => io,
         }
     }
 }

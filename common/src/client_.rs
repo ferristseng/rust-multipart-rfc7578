@@ -10,9 +10,10 @@ use crate::{
     boundary::{BoundaryGenerator, RandomAsciiGenerator},
     error::Error,
 };
-use bytes::{buf::Writer, BufMut, BytesMut};
+use bytes::{BufMut, BytesMut};
 use futures::{
-    io::{AllowStdIo, AsyncRead},
+    io::{AllowStdIo, AsyncRead, Cursor},
+    ready,
     stream::Stream,
     task::{Context, Poll},
 };
@@ -26,7 +27,7 @@ use std::{
     borrow::BorrowMut,
     fmt::Display,
     fs::File,
-    io::{self, Cursor, Read, Write},
+    io::{self, Read},
     iter::Peekable,
     path::Path,
     pin::Pin,
@@ -41,7 +42,7 @@ static CONTENT_TYPE: HeaderName = header::CONTENT_TYPE;
 pub struct Body<'a> {
     /// The amount of data to write with each chunk.
     ///
-    writer: Writer<BytesMut>,
+    buf: BytesMut,
 
     /// The active reader.
     ///
@@ -60,42 +61,42 @@ pub struct Body<'a> {
 impl<'a> Body<'a> {
     /// Writes a CLRF.
     ///
-    fn write_crlf(&mut self) -> io::Result<()> {
-        self.writer.write_all(&[b'\r', b'\n'])
+    fn write_crlf(&mut self) {
+        self.buf.put_slice(&[b'\r', b'\n']);
     }
 
     /// Implements section 4.1.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
     ///
-    fn write_boundary(&mut self) -> io::Result<()> {
-        self.write_crlf()?;
-        self.writer.write_all(&[b'-', b'-'])?;
-        self.writer.write_all(self.boundary.as_bytes())
+    fn write_boundary(&mut self) {
+        self.write_crlf();
+        self.buf.put_slice(&[b'-', b'-']);
+        self.buf.put_slice(self.boundary.as_bytes());
     }
 
     /// Writes the last form boundary.
     ///
     /// [See](https://tools.ietf.org/html/rfc2046#section-5.1).
     ///
-    fn write_final_boundary(&mut self) -> io::Result<()> {
-        self.write_boundary()?;
-        self.writer.write_all(&[b'-', b'-'])
+    fn write_final_boundary(&mut self) {
+        self.write_boundary();
+        self.buf.put_slice(&[b'-', b'-']);
     }
 
     /// Writes the Content-Disposition, and Content-Type headers.
     ///
-    fn write_headers(&mut self, part: &Part) -> io::Result<()> {
-        self.write_crlf()?;
-        self.writer.write_all(CONTENT_TYPE.as_ref())?;
-        self.writer.write_all(b": ")?;
-        self.writer.write_all(part.content_type.as_bytes())?;
-        self.write_crlf()?;
-        self.writer.write_all(CONTENT_DISPOSITION.as_ref())?;
-        self.writer.write_all(b": ")?;
-        self.writer.write_all(part.content_disposition.as_bytes())?;
-        self.write_crlf()?;
-        self.write_crlf()
+    fn write_headers(&mut self, part: &Part) {
+        self.write_crlf();
+        self.buf.put_slice(CONTENT_TYPE.as_ref());
+        self.buf.put_slice(b": ");
+        self.buf.put_slice(part.content_type.as_bytes());
+        self.write_crlf();
+        self.buf.put_slice(CONTENT_DISPOSITION.as_ref());
+        self.buf.put_slice(b": ");
+        self.buf.put_slice(part.content_disposition.as_bytes());
+        self.write_crlf();
+        self.write_crlf();
     }
 }
 
@@ -110,13 +111,13 @@ impl<'a> Stream for Body<'a> {
         match body.current {
             None => {
                 if let Some(part) = body.parts.next() {
-                    body.write_boundary().map_err(Error::BoundaryWrite)?;
-                    body.write_headers(&part).map_err(Error::HeaderWrite)?;
+                    body.write_boundary();
+                    body.write_headers(&part);
 
                     let read: Box<dyn AsyncRead + Send + Sync + Unpin> = match part.inner {
                         Inner::Read(read, _) => Box::new(AllowStdIo::new(read)),
                         Inner::AsyncRead(read) => read,
-                        Inner::Text(s) => Box::new(AllowStdIo::new(Cursor::new(s))),
+                        Inner::Text(s) => Box::new(Cursor::new(s)),
                     };
 
                     body.current = Some(read);
@@ -125,7 +126,7 @@ impl<'a> Stream for Body<'a> {
 
                     Poll::Pending
                 } else {
-                    body.write_final_boundary().map_err(Error::BoundaryWrite)?;
+                    body.write_final_boundary();
 
                     // No current part, and no parts left means there is nothing
                     // left to write.
@@ -134,10 +135,10 @@ impl<'a> Stream for Body<'a> {
                 }
             }
             Some(ref mut read) => {
-                match AsyncRead::poll_read(Pin::new(read), cx, body.writer.get_mut().borrow_mut()) {
+                match ready!(Pin::new(read).poll_read(cx, body.buf.borrow_mut())) {
                     // EOF: No data left to read. Get ready to move onto write the next part.
                     //
-                    Poll::Ready(Ok(0)) => {
+                    Ok(0) => {
                         body.current = None;
 
                         cx.waker().wake_by_ref();
@@ -146,22 +147,10 @@ impl<'a> Stream for Body<'a> {
                     }
                     // Read some data.
                     //
-                    Poll::Ready(Ok(bytes_read)) => {
-                        // We're writing directly to the output buffer, and only advancing the buffer
-                        // the amount that was written. This *should* be safe.
-                        //
-                        unsafe {
-                            body.writer.get_mut().advance_mut(bytes_read);
-                        }
-
-                        Poll::Ready(Some(Ok(body.writer.get_mut().split())))
-                    }
-                    // Underlying stream isn't ready to be read from yet.
-                    //
-                    Poll::Pending => Poll::Pending,
+                    Ok(_bytes_read) => Poll::Ready(Some(Ok(body.buf.split()))),
                     // Error reading from underlying stream.
                     //
-                    Poll::Ready(Err(e)) => Poll::Ready(Some(Err(Error::ContentRead(e)))),
+                    Err(e) => Poll::Ready(Some(Err(Error::ContentRead(e)))),
                 }
             }
         }
@@ -577,7 +566,7 @@ impl<'a> From<Form<'a>> for Body<'a> {
     ///
     fn from(form: Form<'a>) -> Self {
         Body {
-            writer: BytesMut::with_capacity(2048).writer(),
+            buf: BytesMut::with_capacity(2048),
             current: None,
             parts: form.parts.into_iter().peekable(),
             boundary: form.boundary,
