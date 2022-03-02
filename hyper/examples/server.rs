@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use futures::{Future, TryFutureExt};
+use futures_util::{Future, TryFutureExt};
 use hyper::{
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,

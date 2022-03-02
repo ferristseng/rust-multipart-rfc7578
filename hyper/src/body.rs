@@ -8,7 +8,7 @@
 
 use bytes::BytesMut;
 use common_multipart::client::{multipart, Error};
-use futures::{ready, stream::Stream};
+use futures_core::{ready, Stream};
 use http::{HeaderMap, HeaderValue};
 use hyper::{self, body::HttpBody};
 use std::iter::FromIterator;
