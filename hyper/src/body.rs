@@ -8,7 +8,7 @@
 
 use bytes::BytesMut;
 use common_multipart::client::{multipart, Error};
-use futures::stream::Stream;
+use futures::{ready, stream::Stream};
 use http::{HeaderMap, HeaderValue};
 use hyper::{self, body::HttpBody};
 use std::iter::FromIterator;
@@ -46,13 +46,10 @@ impl HttpBody for Body {
     ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
         let Body(inner) = Pin::into_inner(self);
 
-        match Pin::new(inner).poll_next(cx) {
-            Poll::Ready(Some(Ok(read))) => {
-                Poll::Ready(Some(Ok(BytesMut::from_iter(read.into_iter()))))
-            }
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e))),
-            Poll::Ready(None) => Poll::Ready(None),
+        match ready!(Pin::new(inner).poll_next(cx)) {
+            Some(Ok(read)) => Poll::Ready(Some(Ok(BytesMut::from_iter(read.into_iter())))),
+            Some(Err(e)) => Poll::Ready(Some(Err(e))),
+            None => Poll::Ready(None),
         }
     }
 
