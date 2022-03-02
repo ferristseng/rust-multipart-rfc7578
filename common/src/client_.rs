@@ -11,12 +11,8 @@ use crate::{
     error::Error,
 };
 use bytes::{BufMut, BytesMut};
-use futures::{
-    io::{AllowStdIo, AsyncRead, Cursor},
-    ready,
-    stream::Stream,
-    task::{Context, Poll},
-};
+use futures_core::{ready, Stream};
+use futures_util::io::{AllowStdIo, AsyncRead, Cursor};
 use http::{
     self,
     header::{self, HeaderName},
@@ -31,6 +27,7 @@ use std::{
     iter::Peekable,
     path::Path,
     pin::Pin,
+    task::{Context, Poll},
     vec::IntoIter,
 };
 
@@ -275,7 +272,7 @@ impl<'a> Form<'a> {
     ///
     /// ```
     /// use common_multipart_rfc7578::client::multipart;
-    /// use futures::io::Cursor;
+    /// use futures_util::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
     /// let mut form = multipart::Form::default();
@@ -418,7 +415,7 @@ impl<'a> Form<'a> {
     ///
     /// ```
     /// use common_multipart_rfc7578::client::multipart;
-    /// use futures::io::Cursor;
+    /// use futures_util::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
     /// let mut form = multipart::Form::default();
@@ -478,7 +475,7 @@ impl<'a> Form<'a> {
     ///
     /// ```
     /// use common_multipart_rfc7578::client::multipart;
-    /// use futures::io::Cursor;
+    /// use futures_util::io::Cursor;
     ///
     /// let bytes = Cursor::new("Hello World!");
     /// let mut form = multipart::Form::default();
@@ -674,7 +671,7 @@ mod tests {
     use super::{Body, Form};
     use crate::error::Error;
     use bytes::BytesMut;
-    use futures::TryStreamExt;
+    use futures_util::TryStreamExt;
     use std::{
         io::Cursor,
         path::{Path, PathBuf},
