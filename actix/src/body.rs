@@ -9,12 +9,11 @@
 use actix_http::body::{BodySize, MessageBody};
 use bytes::Bytes;
 use common_multipart::client::multipart;
-use futures::{
-    ready,
+use futures_core::{ready, Stream};
+use std::{
+    pin::Pin,
     task::{Context, Poll},
-    Stream,
 };
-use std::pin::Pin;
 
 /// Wraps a
 /// [`common_multipart::client::multipart::Body`] and makes it compatible with Actix.
