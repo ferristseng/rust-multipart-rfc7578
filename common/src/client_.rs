@@ -20,7 +20,6 @@ use http::{
 };
 use mime::{self, Mime};
 use std::{
-    borrow::BorrowMut,
     fmt::Display,
     fs::File,
     io::{self, Read},
@@ -121,10 +120,8 @@ impl<'a> Stream for Body<'a> {
 
                     cx.waker().wake_by_ref();
 
-                    Poll::Pending
+                    Poll::Ready(Some(Ok(body.buf.split())))
                 } else {
-                    body.write_final_boundary();
-
                     // No current part, and no parts left means there is nothing
                     // left to write.
                     //
@@ -132,19 +129,37 @@ impl<'a> Stream for Body<'a> {
                 }
             }
             Some(ref mut read) => {
-                match ready!(Pin::new(read).poll_read(cx, body.buf.borrow_mut())) {
+                let uninit_chunk = body.buf.chunk_mut();
+                let uninit_chunk = std::ptr::slice_from_raw_parts_mut(
+                    uninit_chunk.as_mut_ptr(),
+                    uninit_chunk.len(),
+                );
+
+                // Safe because chunk_mut() returns an array of uninitialized bytes, we are
+                // transforming it into something that can be passed to poll_read.
+                let uninit_chunk = unsafe { uninit_chunk.as_mut().unwrap() };
+
+                match ready!(Pin::new(read).poll_read(cx, uninit_chunk)) {
                     // EOF: No data left to read. Get ready to move onto write the next part.
                     //
                     Ok(0) => {
                         body.current = None;
 
-                        cx.waker().wake_by_ref();
+                        body.write_final_boundary();
 
-                        Poll::Pending
+                        Poll::Ready(Some(Ok(body.buf.split())))
                     }
                     // Read some data.
                     //
-                    Ok(_bytes_read) => Poll::Ready(Some(Ok(body.buf.split()))),
+                    Ok(bytes_read) => {
+                        // Safe because poll_read returns the number of bytes that were read
+                        // into the buffer.
+                        unsafe {
+                            body.buf.advance_mut(bytes_read);
+                        }
+
+                        Poll::Ready(Some(Ok(body.buf.split())))
+                    }
                     // Error reading from underlying stream.
                     //
                     Err(e) => Poll::Ready(Some(Err(Error::ContentRead(e)))),
