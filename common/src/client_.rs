@@ -145,7 +145,10 @@ impl<'a> Stream for Body<'a> {
                     Ok(0) => {
                         body.current = None;
 
-                        body.write_final_boundary();
+                        if self.parts.peek().is_none() {
+                            // If we reached the last part of the form, write the final boundary
+                            body.write_final_boundary();
+                        }
 
                         Poll::Ready(Some(Ok(body.buf.split())))
                     }
