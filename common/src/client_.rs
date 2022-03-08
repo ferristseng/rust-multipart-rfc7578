@@ -129,43 +129,35 @@ impl<'a> Stream for Body<'a> {
                 }
             }
             Some(ref mut read) => {
-                let uninit_chunk = body.buf.chunk_mut();
-                let uninit_chunk = std::ptr::slice_from_raw_parts_mut(
-                    uninit_chunk.as_mut_ptr(),
-                    uninit_chunk.len(),
-                );
+                // Reserve some space to read the next part
+                body.buf.reserve(256);
+                let len_before = body.buf.len();
 
-                // Safe because chunk_mut() returns an array of uninitialized bytes, we are
-                // transforming it into something that can be passed to poll_read.
-                let uninit_chunk = unsafe { uninit_chunk.as_mut().unwrap() };
+                // Init the remaining capacity to 0, and get a mut slice to it
+                body.buf.resize(body.buf.capacity(), 0);
+                let slice = &mut body.buf.as_mut()[len_before..];
 
-                match ready!(Pin::new(read).poll_read(cx, uninit_chunk)) {
-                    // EOF: No data left to read. Get ready to move onto write the next part.
-                    //
-                    Ok(0) => {
-                        body.current = None;
-
-                        if self.parts.peek().is_none() {
-                            // If we reached the last part of the form, write the final boundary
-                            body.write_final_boundary();
-                        }
-
-                        Poll::Ready(Some(Ok(body.buf.split())))
-                    }
+                match ready!(Pin::new(read).poll_read(cx, slice)) {
                     // Read some data.
-                    //
                     Ok(bytes_read) => {
-                        // Safe because poll_read returns the number of bytes that were read
-                        // into the buffer.
-                        unsafe {
-                            body.buf.advance_mut(bytes_read);
+                        body.buf.truncate(len_before + bytes_read);
+                    
+                        if bytes_read == 0 {
+                            // EOF: No data left to read. Get ready to move onto write the next part.
+                            body.current = None;
+                            if body.parts.peek().is_none() {
+                                // If there is no next part, write the final boundary
+                                body.write_final_boundary();
+                            }
                         }
 
                         Poll::Ready(Some(Ok(body.buf.split())))
                     }
                     // Error reading from underlying stream.
-                    //
-                    Err(e) => Poll::Ready(Some(Err(Error::ContentRead(e)))),
+                    Err(e) => {
+                        body.buf.truncate(len_before);
+                        Poll::Ready(Some(Err(Error::ContentRead(e))))
+                    },
                 }
             }
         }
