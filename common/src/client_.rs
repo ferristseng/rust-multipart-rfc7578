@@ -66,7 +66,6 @@ impl<'a> Body<'a> {
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
     ///
     fn write_boundary(&mut self) {
-        self.write_crlf();
         self.buf.put_slice(&[b'-', b'-']);
         self.buf.put_slice(self.boundary.as_bytes());
     }
@@ -141,10 +140,11 @@ impl<'a> Stream for Body<'a> {
                     // Read some data.
                     Ok(bytes_read) => {
                         body.buf.truncate(len_before + bytes_read);
-                    
+
                         if bytes_read == 0 {
                             // EOF: No data left to read. Get ready to move onto write the next part.
                             body.current = None;
+                            body.write_crlf();
                             if body.parts.peek().is_none() {
                                 // If there is no next part, write the final boundary
                                 body.write_final_boundary();
@@ -157,7 +157,7 @@ impl<'a> Stream for Body<'a> {
                     Err(e) => {
                         body.buf.truncate(len_before);
                         Poll::Ready(Some(Err(Error::ContentRead(e))))
-                    },
+                    }
                 }
             }
         }
@@ -753,5 +753,46 @@ mod tests {
 
         assert!(data.contains("This is a test file!"));
         assert!(data.contains("text/csv"));
+    }
+
+    #[tokio::test]
+    async fn test_form_body_stream() {
+        struct FixedBoundary;
+        impl crate::boundary::BoundaryGenerator for FixedBoundary {
+            fn generate_boundary() -> String {
+                "boundary".to_owned()
+            }
+        }
+        let mut form = Form::new::<FixedBoundary>();
+        // Text fields
+        form.add_text("name1", "value1");
+        form.add_text("name2", "value2");
+
+        // Reader field
+        form.add_reader("input", Cursor::new("Hello World!"));
+
+        let result: BytesMut = Body::from(form).try_concat().await.unwrap();
+
+        assert_eq!(
+            result.as_ref(),
+            [
+                b"--boundary\r\n".as_ref(),
+                b"content-type: text/plain\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"name1\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"value1\r\n".as_ref(),
+                b"--boundary\r\n".as_ref(),
+                b"content-type: text/plain\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"name2\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"value2\r\n".as_ref(),
+                b"--boundary\r\n".as_ref(),
+                b"content-type: application/octet-stream\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"input\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"Hello World!\r\n".as_ref(),
+                b"--boundary--".as_ref(),
+            ].into_iter().flatten().copied().collect::<Vec<u8>>()
+        );
     }
 }
