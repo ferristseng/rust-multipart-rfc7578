@@ -148,6 +148,7 @@ impl<'a> Stream for Body<'a> {
                             if body.parts.peek().is_none() {
                                 // If there is no next part, write the final boundary
                                 body.write_final_boundary();
+                                body.write_crlf();
                             }
                         }
 
@@ -791,7 +792,7 @@ mod tests {
                 b"content-disposition: form-data; name=\"input\"\r\n".as_ref(),
                 b"\r\n".as_ref(),
                 b"Hello World!\r\n".as_ref(),
-                b"--boundary--".as_ref(),
+                b"--boundary--\r\n".as_ref(),
             ].into_iter().flatten().copied().collect::<Vec<u8>>()
         );
     }
