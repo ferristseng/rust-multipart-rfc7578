@@ -66,7 +66,6 @@ impl<'a> Body<'a> {
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
     ///
     fn write_boundary(&mut self) {
-        self.write_crlf();
         self.buf.put_slice(&[b'-', b'-']);
         self.buf.put_slice(self.boundary.as_bytes());
     }
@@ -129,40 +128,36 @@ impl<'a> Stream for Body<'a> {
                 }
             }
             Some(ref mut read) => {
-                let uninit_chunk = body.buf.chunk_mut();
-                let uninit_chunk = std::ptr::slice_from_raw_parts_mut(
-                    uninit_chunk.as_mut_ptr(),
-                    uninit_chunk.len(),
-                );
+                // Reserve some space to read the next part
+                body.buf.reserve(256);
+                let len_before = body.buf.len();
 
-                // Safe because chunk_mut() returns an array of uninitialized bytes, we are
-                // transforming it into something that can be passed to poll_read.
-                let uninit_chunk = unsafe { uninit_chunk.as_mut().unwrap() };
+                // Init the remaining capacity to 0, and get a mut slice to it
+                body.buf.resize(body.buf.capacity(), 0);
+                let slice = &mut body.buf.as_mut()[len_before..];
 
-                match ready!(Pin::new(read).poll_read(cx, uninit_chunk)) {
-                    // EOF: No data left to read. Get ready to move onto write the next part.
-                    //
-                    Ok(0) => {
-                        body.current = None;
-
-                        body.write_final_boundary();
-
-                        Poll::Ready(Some(Ok(body.buf.split())))
-                    }
+                match ready!(Pin::new(read).poll_read(cx, slice)) {
                     // Read some data.
-                    //
                     Ok(bytes_read) => {
-                        // Safe because poll_read returns the number of bytes that were read
-                        // into the buffer.
-                        unsafe {
-                            body.buf.advance_mut(bytes_read);
+                        body.buf.truncate(len_before + bytes_read);
+
+                        if bytes_read == 0 {
+                            // EOF: No data left to read. Get ready to move onto write the next part.
+                            body.current = None;
+                            body.write_crlf();
+                            if body.parts.peek().is_none() {
+                                // If there is no next part, write the final boundary
+                                body.write_final_boundary();
+                            }
                         }
 
                         Poll::Ready(Some(Ok(body.buf.split())))
                     }
                     // Error reading from underlying stream.
-                    //
-                    Err(e) => Poll::Ready(Some(Err(Error::ContentRead(e)))),
+                    Err(e) => {
+                        body.buf.truncate(len_before);
+                        Poll::Ready(Some(Err(Error::ContentRead(e))))
+                    }
                 }
             }
         }
@@ -758,5 +753,46 @@ mod tests {
 
         assert!(data.contains("This is a test file!"));
         assert!(data.contains("text/csv"));
+    }
+
+    #[tokio::test]
+    async fn test_form_body_stream() {
+        struct FixedBoundary;
+        impl crate::boundary::BoundaryGenerator for FixedBoundary {
+            fn generate_boundary() -> String {
+                "boundary".to_owned()
+            }
+        }
+        let mut form = Form::new::<FixedBoundary>();
+        // Text fields
+        form.add_text("name1", "value1");
+        form.add_text("name2", "value2");
+
+        // Reader field
+        form.add_reader("input", Cursor::new("Hello World!"));
+
+        let result: BytesMut = Body::from(form).try_concat().await.unwrap();
+
+        assert_eq!(
+            result.as_ref(),
+            [
+                b"--boundary\r\n".as_ref(),
+                b"content-type: text/plain\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"name1\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"value1\r\n".as_ref(),
+                b"--boundary\r\n".as_ref(),
+                b"content-type: text/plain\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"name2\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"value2\r\n".as_ref(),
+                b"--boundary\r\n".as_ref(),
+                b"content-type: application/octet-stream\r\n".as_ref(),
+                b"content-disposition: form-data; name=\"input\"\r\n".as_ref(),
+                b"\r\n".as_ref(),
+                b"Hello World!\r\n".as_ref(),
+                b"--boundary--".as_ref(),
+            ].into_iter().flatten().copied().collect::<Vec<u8>>()
+        );
     }
 }
