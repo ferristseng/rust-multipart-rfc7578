@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hyper-multipart-rfc7578 = "0.5"
+//! hyper-multipart-rfc7578 = "0.7"
 //! ```
 //!
 //! Import the crate:

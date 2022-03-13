@@ -18,7 +18,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! actix-multipart-rfc7578 = "0.8"
+//! actix-multipart-rfc7578 = "0.9"
 //! ```
 //!
 //! and import:
@@ -31,7 +31,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hyper-multipart-rfc7578 = "0.6"
+//! hyper-multipart-rfc7578 = "0.7"
 //! ```
 //!
 //! and import:
