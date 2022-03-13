@@ -148,6 +148,7 @@ impl<'a> Stream for Body<'a> {
                             if body.parts.peek().is_none() {
                                 // If there is no next part, write the final boundary
                                 body.write_final_boundary();
+                                body.write_crlf();
                             }
                         }
 
@@ -564,7 +565,7 @@ impl<'a> Form<'a> {
     }
 
     pub fn content_type(&self) -> String {
-        format!("multipart/form-data; boundary=\"{}\"", &self.boundary)
+        format!("multipart/form-data; boundary={}", &self.boundary)
     }
 }
 
@@ -755,14 +756,15 @@ mod tests {
         assert!(data.contains("text/csv"));
     }
 
+    struct FixedBoundary;
+    impl crate::boundary::BoundaryGenerator for FixedBoundary {
+        fn generate_boundary() -> String {
+            "boundary".to_owned()
+        }
+    }
+
     #[tokio::test]
     async fn test_form_body_stream() {
-        struct FixedBoundary;
-        impl crate::boundary::BoundaryGenerator for FixedBoundary {
-            fn generate_boundary() -> String {
-                "boundary".to_owned()
-            }
-        }
         let mut form = Form::new::<FixedBoundary>();
         // Text fields
         form.add_text("name1", "value1");
@@ -791,8 +793,30 @@ mod tests {
                 b"content-disposition: form-data; name=\"input\"\r\n".as_ref(),
                 b"\r\n".as_ref(),
                 b"Hello World!\r\n".as_ref(),
-                b"--boundary--".as_ref(),
-            ].into_iter().flatten().copied().collect::<Vec<u8>>()
+                b"--boundary--\r\n".as_ref(),
+            ]
+            .into_iter()
+            .flatten()
+            .copied()
+            .collect::<Vec<u8>>()
         );
+    }
+
+    #[tokio::test]
+    async fn test_content_type_header_format() {
+        use http::Request;
+
+        let mut form = Form::new::<FixedBoundary>();
+        // Text fields
+        form.add_text("name1", "value1");
+        form.add_text("name2", "value2");
+
+        let builder = Request::builder();
+        let body = form.set_body::<Body>(builder).unwrap();
+
+        assert_eq!(
+            body.headers().get("Content-Type").unwrap().as_bytes(),
+            b"multipart/form-data; boundary=boundary",
+        )
     }
 }
