@@ -23,7 +23,7 @@ your Cargo.toml file:
 
 ```toml
 [dependencies]
-actix-multipart-rfc7578 = "0.9"
+actix-multipart-rfc7578 = "0.10"
 ```
 
 and import:
@@ -36,7 +36,7 @@ extern crate actix_multipart_rfc7578 as multipart;
 
 ```toml
 [dependencies]
-hyper-multipart-rfc7578 = "0.7"
+hyper-multipart-rfc7578 = "0.8"
 ```
 
 and import:
