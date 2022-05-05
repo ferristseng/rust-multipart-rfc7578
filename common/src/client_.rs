@@ -11,7 +11,7 @@ use crate::{
     error::Error,
 };
 use bytes::{BufMut, BytesMut};
-use futures_core::{ready, Stream};
+use futures_core::Stream;
 use futures_util::io::{AllowStdIo, AsyncRead, Cursor};
 use http::{
     self,
@@ -136,9 +136,13 @@ impl<'a> Stream for Body<'a> {
                 body.buf.resize(body.buf.capacity(), 0);
                 let slice = &mut body.buf.as_mut()[len_before..];
 
-                match ready!(Pin::new(read).poll_read(cx, slice)) {
+                match Pin::new(read).poll_read(cx, slice) {
+                    Poll::Pending => {
+                        body.buf.truncate(len_before);
+                        Poll::Pending
+                    }
                     // Read some data.
-                    Ok(bytes_read) => {
+                    Poll::Ready(Ok(bytes_read)) => {
                         body.buf.truncate(len_before + bytes_read);
 
                         if bytes_read == 0 {
@@ -155,7 +159,7 @@ impl<'a> Stream for Body<'a> {
                         Poll::Ready(Some(Ok(body.buf.split())))
                     }
                     // Error reading from underlying stream.
-                    Err(e) => {
+                    Poll::Ready(Err(e)) => {
                         body.buf.truncate(len_before);
                         Poll::Ready(Some(Err(Error::ContentRead(e))))
                     }
