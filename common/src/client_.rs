@@ -42,7 +42,7 @@ pub struct Body<'a> {
 
     /// The active reader.
     ///
-    current: Option<Box<dyn 'a + AsyncRead + Send + Sync + Unpin>>,
+    current: Option<Box<dyn 'a + AsyncRead + Send + Unpin>>,
 
     /// The parts as an iterator. When the iterator stops
     /// yielding, the body is fully written.
@@ -109,7 +109,7 @@ impl<'a> Stream for Body<'a> {
                     body.write_boundary();
                     body.write_headers(&part);
 
-                    let read: Box<dyn AsyncRead + Send + Sync + Unpin> = match part.inner {
+                    let read: Box<dyn AsyncRead + Send + Unpin> = match part.inner {
                         Inner::Read(read, _) => Box::new(AllowStdIo::new(read)),
                         Inner::AsyncRead(read) => read,
                         Inner::Text(s) => Box::new(Cursor::new(s)),
@@ -269,7 +269,7 @@ impl<'a> Form<'a> {
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
-        R: 'a + Read + Send + Sync + Unpin,
+        R: 'a + Read + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -298,7 +298,7 @@ impl<'a> Form<'a> {
     pub fn add_async_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
-        R: 'a + AsyncRead + Send + Sync + Unpin,
+        R: 'a + AsyncRead + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -412,7 +412,7 @@ impl<'a> Form<'a> {
     where
         F: Display,
         G: Into<String>,
-        R: 'a + Read + Send + Sync + Unpin,
+        R: 'a + Read + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -442,7 +442,7 @@ impl<'a> Form<'a> {
     where
         F: Display,
         G: Into<String>,
-        R: 'a + AsyncRead + Send + Sync + Unpin,
+        R: 'a + AsyncRead + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -472,7 +472,7 @@ impl<'a> Form<'a> {
     where
         F: Display,
         G: Into<String>,
-        R: 'a + Read + Send + Sync + Unpin,
+        R: 'a + Read + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -507,7 +507,7 @@ impl<'a> Form<'a> {
     ) where
         F: Display,
         G: Into<String>,
-        R: 'a + AsyncRead + Send + Sync + Unpin,
+        R: 'a + AsyncRead + Send + Unpin,
     {
         let read = Box::new(read);
 
@@ -659,9 +659,9 @@ enum Inner<'a> {
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
     ///
-    Read(Box<dyn 'a + Read + Send + Sync + Unpin>, Option<u64>),
+    Read(Box<dyn 'a + Read + Send + Unpin>, Option<u64>),
 
-    AsyncRead(Box<dyn 'a + AsyncRead + Send + Sync + Unpin>),
+    AsyncRead(Box<dyn 'a + AsyncRead + Send + Unpin>),
 
     /// The `String` variant handles "text/plain" form data payloads.
     ///
