@@ -6,33 +6,40 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use futures_util::{Future, TryFutureExt};
-use hyper::{
-    service::{make_service_fn, service_fn},
-    Body, Request, Response, Server,
-};
-use std::{convert::Infallible, net::SocketAddr};
+use bytes::Bytes;
+use http_body_util::{BodyExt, Empty};
+use hyper::body::Incoming;
+use hyper::server::conn::http1::Builder;
+use hyper::{service::service_fn, Request, Response};
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpListener;
 
-fn index(req: Request<Body>) -> impl Future<Output = Result<Response<Body>, hyper::Error>> {
+async fn index(req: Request<Incoming>) -> Result<Response<Empty<Bytes>>, hyper::Error> {
     println!("{:?}", req.headers());
-    hyper::body::to_bytes(req.into_body()).map_ok(|bod| {
-        println!("{}", String::from_utf8_lossy(&bod));
 
-        Response::new(Body::empty())
-    })
+    let data = req.into_body().collect().await?.to_bytes();
+    println!("{}", String::from_utf8_lossy(&data));
+
+    Ok(Response::new(Empty::new()))
 }
 
 /// This example runs a server that prints requests as it receives them.
 /// It is useful for debugging.
 ///
 #[tokio::main]
-async fn main() {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 9001));
-    let server = Server::bind(&addr).serve(make_service_fn(|_| async {
-        Ok::<_, Infallible>(service_fn(index))
-    }));
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let addr = "127.0.0.1:9001";
+    let listener = TcpListener::bind(addr).await?;
 
-    if let Err(e) = server.await {
-        eprintln!("Server Error: {}", e);
+    loop {
+        let (socket, _addr) = listener.accept().await?;
+        tokio::spawn(async {
+            let conn = Builder::new().serve_connection(TokioIo::new(socket), service_fn(index));
+
+            match conn.await {
+                Ok(_) => eprintln!("Done serving connection."),
+                Err(e) => eprintln!("Server Error: {e}"),
+            }
+        });
     }
 }

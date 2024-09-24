@@ -16,7 +16,7 @@ github                    = { repository = "ferristseng/rust-multipart-rfc7578",
 maintenance               = { status = "passively-maintained" }
 
 [dependencies]
-actix-http                = { version = "3", default-features = false }
+actix-http                = { version = "3.9", default-features = false }
 bytes                     = "1.1"
 common-multipart-rfc7578  = { path = "../common", version = "0.6" }
 futures-core              = "0.3"
@@ -24,4 +24,4 @@ thiserror                 = "1.0"
 
 [dev-dependencies]
 awc                       = "3"
-actix-rt                  = "2.7.0"
+actix-rt                  = "2.10.0"

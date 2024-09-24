@@ -19,11 +19,13 @@ maintenance               = { status = "passively-maintained" }
 bytes                     = "1.1"
 common-multipart-rfc7578  = { path = "../common", version = "0.6" }
 futures-core              = "0.3"
-http                      = "0.2"
-hyper                     = { version = "0.14", features = ["stream"] }
+http                      = "1.1"
+hyper                     = "1.4"
 
 [dev-dependencies]
 futures-util              = { version = "0.3", default-features = false, features = ["std"] }
-hyper                     = { version = "0.14", features = ["client", "http1", "http2", "server", "stream"] }
-hyper-tls                 = "0.5"
+http-body-util            = "0.1.2"
+hyper                     = { version = "1.4", features = ["client", "http1", "http2", "server"] }
+hyper-tls                 = "0.6"
+hyper-util                = { version = "0.1.8", features = ["client", "client-legacy", "http1", "tokio"] }
 tokio                     = { version = "1", features = ["macros", "rt-multi-thread"] }
