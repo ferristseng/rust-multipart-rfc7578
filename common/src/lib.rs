@@ -39,7 +39,6 @@
 //! ```rust
 //! extern crate hyper_multipart_rfc7578 as multipart;
 //! ```
-//!
 
 mod boundary;
 mod client_;
@@ -50,7 +49,6 @@ pub mod client {
 
     /// This module contains data structures for building a multipart/form
     /// body to send a server.
-    ///
     pub mod multipart {
         pub use crate::{
             boundary::BoundaryGenerator,

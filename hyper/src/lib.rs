@@ -37,19 +37,19 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let client = Client::builder().build_http();
-//!   let mut form = multipart::Form::default();
+//!     let client = Client::builder().build_http();
+//!     let mut form = multipart::Form::default();
 //!
-//!   form.add_text("test", "Hello World");
+//!     form.add_text("test", "Hello World");
 //!
-//!   let mut req_builder = Request::get("http://localhost/upload");
-//!   let req = form.set_body::<multipart::Body>(req_builder).unwrap();
+//!     let mut req_builder = Request::get("http://localhost/upload");
+//!     let req = form.set_body::<multipart::Body>(req_builder).unwrap();
 //!
-//!   if let Ok(_) = client.request(req).await {
-//!     println!("done...");
-//!   } else {
-//!     eprintln!("an error occurred");
-//!   }
+//!     if let Ok(_) = client.request(req).await {
+//!         println!("done...");
+//!     } else {
+//!         eprintln!("an error occurred");
+//!     }
 //! }
 //! ```
 //!
@@ -58,30 +58,28 @@
 //! ```rust
 //! extern crate hyper_multipart_rfc7578 as hyper_multipart;
 //!
-//! use hyper::{
-//!     Client, Request,
-//! };
+//! use hyper::{Client, Request};
 //! use hyper_multipart::client::{self, multipart};
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   let client = Client::new();
-//!   let mut form = multipart::Form::default();
+//!     let client = Client::new();
+//!     let mut form = multipart::Form::default();
 //!
-//!   form.add_text("test", "Hello World");
+//!     form.add_text("test", "Hello World");
 //!
-//!   let mut req_builder = Request::get("http://localhost/upload");
-//!   let req = form.set_body_convert::<hyper::Body, multipart::Body>(req_builder)
-//!       .unwrap();
+//!     let mut req_builder = Request::get("http://localhost/upload");
+//!     let req = form
+//!         .set_body_convert::<hyper::Body, multipart::Body>(req_builder)
+//!         .unwrap();
 //!
-//!   if let Ok(_) = client.request(req).await {
-//!     println!("done...");
-//!   } else {
-//!     eprintln!("an error occurred");
-//!   }
+//!     if let Ok(_) = client.request(req).await {
+//!         println!("done...");
+//!     } else {
+//!         eprintln!("an error occurred");
+//!     }
 //! }
 //! ```
-//!
 
 #![allow(clippy::needless_doctest_main)]
 

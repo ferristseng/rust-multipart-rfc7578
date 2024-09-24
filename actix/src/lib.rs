@@ -33,24 +33,23 @@
 //!
 //! #[actix_rt::main]
 //! async fn main() {
-//!   let mut form = multipart::Form::default();
+//!     let mut form = multipart::Form::default();
 //!
-//!   form.add_text("test", "Hello World");
+//!     form.add_text("test", "Hello World");
 //!
-//!   let response = Client::default()
-//!     .get("http://localhost/upload")
-//!     .content_type(form.content_type())
-//!     .send_body(multipart::Body::from(form))
-//!     .await;
+//!     let response = Client::default()
+//!         .get("http://localhost/upload")
+//!         .content_type(form.content_type())
+//!         .send_body(multipart::Body::from(form))
+//!         .await;
 //!
-//!   if let Ok(_) = response {
-//!     println!("done...");
-//!   } else {
-//!     eprintln!("an error occurred");
-//!   }
+//!     if let Ok(_) = response {
+//!         println!("done...");
+//!     } else {
+//!         eprintln!("an error occurred");
+//!     }
 //! }
 //! ```
-//!
 
 #![allow(clippy::needless_doctest_main)]
 

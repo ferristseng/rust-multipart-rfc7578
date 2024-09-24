@@ -25,7 +25,6 @@ async fn index(req: Request<Incoming>) -> Result<Response<Empty<Bytes>>, hyper::
 
 /// This example runs a server that prints requests as it receives them.
 /// It is useful for debugging.
-///
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "127.0.0.1:9001";

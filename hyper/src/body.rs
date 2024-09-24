@@ -27,7 +27,6 @@ impl hyper::body::Body for Body {
     type Error = Error;
 
     /// Implement `Payload` so `Body` can be used with a hyper client.
-    ///
     #[inline]
     fn poll_frame(
         self: Pin<&mut Self>,

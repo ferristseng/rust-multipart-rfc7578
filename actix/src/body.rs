@@ -17,7 +17,6 @@ use std::{
 
 /// Wraps a
 /// [`common_multipart::client::multipart::Body`] and makes it compatible with Actix.
-///
 pub struct Body<'a>(multipart::Body<'a>);
 
 impl<'a> From<multipart::Form<'a>> for Body<'a> {
