@@ -6,8 +6,8 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+use crate::common_multipart::client::{multipart, Error};
 use bytes::Bytes;
-use common_multipart::client::{multipart, Error};
 use futures_core::{ready, Stream};
 use hyper::body::Frame;
 use std::pin::Pin;

@@ -302,7 +302,8 @@ impl<'a> Form<'a> {
     ///
     /// let mut form = multipart::Form::default();
     ///
-    /// form.add_file("file", file!()).expect("file to exist");
+    /// form.add_file("file", format!("../{}", file!()))
+    ///     .expect("file to exist");
     /// ```
     pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
     where
@@ -525,7 +526,8 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper::{Body, Method, Request};
+    /// use http_body_util::BodyDataStream;
+    /// use hyper::{Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
     /// let mut req_builder = Request::post("http://localhost:80/upload");
@@ -533,9 +535,11 @@ impl<'a> Form<'a> {
     ///
     /// form.add_text("text", "Hello World!");
     /// let req = form
-    ///     .set_body_convert::<hyper::Body, multipart::Body>(req_builder)
+    ///     .set_body_convert::<multipart::Body, multipart::Body>(req_builder)
     ///     .unwrap();
     /// ```
+    // Dev note: I am not sure this function is useful anymore, I could not fix the test
+    // with something besides an identity transform.
     pub fn set_body_convert<B, I>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         I: From<Body<'a>> + Into<B>,

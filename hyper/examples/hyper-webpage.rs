@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate hyper_multipart_rfc7578 as hyper_multipart;
+use hyper_multipart_rfc7578 as hyper_multipart;
 
 use bytes::Bytes;
 use futures_util::TryStreamExt;

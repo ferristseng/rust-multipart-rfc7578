@@ -22,7 +22,7 @@
 //! Import the crate:
 //!
 //! ```rust
-//! extern crate actix_multipart_rfc7578 as multipart;
+//! use actix_multipart_rfc7578 as multipart;
 //! ```
 //!
 //! ## Example:
@@ -53,15 +53,15 @@
 
 #![allow(clippy::needless_doctest_main)]
 
-extern crate common_multipart_rfc7578 as common_multipart;
+use common_multipart_rfc7578 as common_multipart;
 
 mod body;
 
 pub mod client {
-    pub use common_multipart::client::Error;
+    pub use crate::common_multipart::client::Error;
 
     pub mod multipart {
         pub use crate::body::Body;
-        pub use common_multipart::client::multipart::{BoundaryGenerator, Form};
+        pub use crate::common_multipart::client::multipart::{BoundaryGenerator, Form};
     }
 }

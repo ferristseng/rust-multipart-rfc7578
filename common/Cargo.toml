@@ -31,3 +31,4 @@ futures-util              = { version = "0.3", default-features = false, feature
 hyper                     = "1.4"
 hyper-multipart-rfc7578   = { path = "../hyper" }
 tokio                     = { version = "1", features = ["macros"] }
+http-body-util            = "0.1.2"

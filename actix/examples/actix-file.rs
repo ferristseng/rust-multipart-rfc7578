@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-extern crate actix_multipart_rfc7578 as actix_multipart;
+use actix_multipart_rfc7578 as actix_multipart;
 
 use actix_multipart::client::multipart;
 use awc::Client;
