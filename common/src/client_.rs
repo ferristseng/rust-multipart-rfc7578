@@ -100,7 +100,7 @@ impl<'a> Stream for Body<'a> {
                     body.write_headers(&part);
 
                     let read: Box<dyn AsyncRead + Send + Sync + Unpin> = match part.inner {
-                        Inner::Read(read, _) => Box::new(AllowStdIo::new(read)),
+                        Inner::Read(read) => Box::new(AllowStdIo::new(read)),
                         Inner::AsyncRead(read) => read,
                         Inner::Text(s) => Box::new(Cursor::new(s)),
                     };
@@ -257,12 +257,8 @@ impl<'a> Form<'a> {
     {
         let read = Box::new(read);
 
-        self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
-            name,
-            None,
-            None,
-        ));
+        self.parts
+            .push(Part::new::<_, String>(Inner::Read(read), name, None, None));
     }
 
     /// Adds a readable part to the Form.
@@ -343,30 +339,24 @@ impl<'a> Form<'a> {
         let f = File::open(&path)?;
         let mime = mime.or_else(|| mime_guess::from_path(&path).first());
 
-        let len = match f.metadata() {
+        // Early return if the file metadata could not be accessed. This MIGHT
+        // not be an error, if the file could be opened.
+        let meta = f.metadata()?;
+
+        if !meta.is_file() {
             // If the path is not a file, it can't be uploaded because there
             // is no content.
-            //
-            Ok(ref meta) if !meta.is_file() => Err(io::Error::new(
+
+            return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "expected a file not directory",
-            )),
-
-            // If there is some metadata on the file, try to derive some
-            // header values.
-            //
-            Ok(ref meta) => Ok(Some(meta.len())),
-
-            // The file metadata could not be accessed. This MIGHT not be an
-            // error, if the file could be opened.
-            //
-            Err(e) => Err(e),
-        }?;
+            ));
+        }
 
         let read = Box::new(f);
 
         self.parts.push(Part::new(
-            Inner::Read(read, len),
+            Inner::Read(read),
             name,
             mime,
             Some(path.as_ref().as_os_str().to_string_lossy()),
@@ -397,7 +387,7 @@ impl<'a> Form<'a> {
         let read = Box::new(read);
 
         self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
+            Inner::Read(read),
             name,
             None,
             Some(filename.into()),
@@ -455,7 +445,7 @@ impl<'a> Form<'a> {
         let read = Box::new(read);
 
         self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
+            Inner::Read(read),
             name,
             Some(mime),
             Some(filename.into()),
@@ -633,7 +623,7 @@ enum Inner<'a> {
     ///     Any arbitrary input stream is automatically considered a file,
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
-    Read(Box<dyn 'a + Read + Send + Sync + Unpin>, Option<u64>),
+    Read(Box<dyn 'a + Read + Send + Sync + Unpin>),
 
     AsyncRead(Box<dyn 'a + AsyncRead + Send + Sync + Unpin>),
 
@@ -647,7 +637,7 @@ impl<'a> Inner<'a> {
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)
     fn default_content_type(&self) -> Mime {
         match *self {
-            Inner::Read(_, _) | Inner::AsyncRead(_) => mime::APPLICATION_OCTET_STREAM,
+            Inner::Read(_) | Inner::AsyncRead(_) => mime::APPLICATION_OCTET_STREAM,
             Inner::Text(_) => mime::TEXT_PLAIN,
         }
     }
