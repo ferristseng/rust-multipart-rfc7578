@@ -15,9 +15,9 @@ pub enum Error {
     ContentRead(IoError),
 }
 
-impl Into<IoError> for Error {
-    fn into(self) -> IoError {
-        match self {
+impl From<Error> for IoError {
+    fn from(val: Error) -> Self {
+        match val {
             Error::ContentRead(io) => io,
         }
     }

@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn generate_random_boundary_not_empty() {
-        assert!(RandomAsciiGenerator::generate_boundary().len() > 0);
+        assert!(!RandomAsciiGenerator::generate_boundary().is_empty());
     }
 
     #[test]

@@ -52,14 +52,14 @@ pub struct Body<'a> {
 impl<'a> Body<'a> {
     /// Writes a CLRF.
     fn write_crlf(&mut self) {
-        self.buf.put_slice(&[b'\r', b'\n']);
+        self.buf.put_slice(b"\r\n");
     }
 
     /// Implements section 4.1.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
     fn write_boundary(&mut self) {
-        self.buf.put_slice(&[b'-', b'-']);
+        self.buf.put_slice(b"--");
         self.buf.put_slice(self.boundary.as_bytes());
     }
 
@@ -68,7 +68,7 @@ impl<'a> Body<'a> {
     /// [See](https://tools.ietf.org/html/rfc2046#section-5.1).
     fn write_final_boundary(&mut self) {
         self.write_boundary();
-        self.buf.put_slice(&[b'-', b'-']);
+        self.buf.put_slice(b"--");
     }
 
     /// Writes the Content-Disposition, and Content-Type headers.
