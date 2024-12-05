@@ -31,7 +31,6 @@ use std::iter::FromIterator;
 /// ```
 pub trait BoundaryGenerator {
     /// Generates a String to use as a boundary.
-    ///
     fn generate_boundary() -> String;
 }
 
@@ -39,7 +38,6 @@ pub(crate) struct RandomAsciiGenerator;
 
 impl BoundaryGenerator for RandomAsciiGenerator {
     /// Creates a boundary of 6 ascii characters.
-    ///
     fn generate_boundary() -> String {
         let rng = SmallRng::from_entropy();
         let ascii = rng.sample_iter(&Alphanumeric);
@@ -54,7 +52,7 @@ mod tests {
 
     #[test]
     fn generate_random_boundary_not_empty() {
-        assert!(RandomAsciiGenerator::generate_boundary().len() > 0);
+        assert!(!RandomAsciiGenerator::generate_boundary().is_empty());
     }
 
     #[test]
