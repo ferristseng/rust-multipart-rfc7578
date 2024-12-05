@@ -3,6 +3,8 @@
 
 ## Rust Multipart (RFC 7578)
 
+**Call for new maintainer. I no longer use this code, and would happily pass this off to someone who would like to continue to maintain this code. Feel free to message me, and we can find a way to make that happen.**
+
 ### Components
 
 | Name   | Documentation                                  | Crate                                             |
@@ -29,7 +31,7 @@ actix-multipart-rfc7578 = "0.10"
 and import:
 
 ```rust
-extern crate actix_multipart_rfc7578 as multipart;
+use actix_multipart_rfc7578 as multipart;
 ```
 
 #### Hyper:
@@ -42,9 +44,8 @@ hyper-multipart-rfc7578 = "0.8"
 and import:
 
 ```rust
-extern crate hyper_multipart_rfc7578 as multipart;
+use hyper_multipart_rfc7578 as multipart;
 ```
-
 
 ## Note on Server Implementation
 

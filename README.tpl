@@ -2,6 +2,8 @@
 
 ## Rust Multipart (RFC 7578)
 
+**Call for new maintainer. I no longer use this code, and would happily pass this off to someone who would like to continue to maintain this code. Feel free to message me, and we can find a way to make that happen.**
+
 ### Components
 
 | Name   | Documentation                                  | Crate                                             |
