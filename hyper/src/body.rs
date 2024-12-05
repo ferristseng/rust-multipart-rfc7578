@@ -6,25 +6,14 @@
 // copied, modified, or distributed except according to those terms.
 //
 
-use bytes::BytesMut;
-use common_multipart::client::{multipart, Error};
+use crate::common_multipart::client::{multipart, Error};
+use bytes::Bytes;
 use futures_core::{ready, Stream};
-use http::{HeaderMap, HeaderValue};
-use hyper::{self, body::HttpBody};
-use std::iter::FromIterator;
+use hyper::body::Frame;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pub struct Body(multipart::Body<'static>);
-
-impl Into<hyper::Body> for Body {
-    #[inline]
-    fn into(self) -> hyper::Body {
-        let Body(inner) = self;
-
-        hyper::Body::wrap_stream(inner)
-    }
-}
 
 impl From<multipart::Body<'static>> for Body {
     #[inline]
@@ -33,30 +22,22 @@ impl From<multipart::Body<'static>> for Body {
     }
 }
 
-impl HttpBody for Body {
-    type Data = BytesMut;
+impl hyper::body::Body for Body {
+    type Data = Bytes;
     type Error = Error;
 
     /// Implement `Payload` so `Body` can be used with a hyper client.
-    ///
     #[inline]
-    fn poll_data(
+    fn poll_frame(
         self: Pin<&mut Self>,
-        cx: &mut Context,
-    ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Frame<Self::Data>, Self::Error>>> {
         let Body(inner) = Pin::into_inner(self);
 
         match ready!(Pin::new(inner).poll_next(cx)) {
-            Some(Ok(read)) => Poll::Ready(Some(Ok(BytesMut::from_iter(read.into_iter())))),
+            Some(Ok(read)) => Poll::Ready(Some(Ok(Frame::data(read.freeze())))),
             Some(Err(e)) => Poll::Ready(Some(Err(e))),
             None => Poll::Ready(None),
         }
-    }
-
-    fn poll_trailers(
-        self: Pin<&mut Self>,
-        _: &mut Context,
-    ) -> Poll<Result<Option<HeaderMap<HeaderValue>>, Self::Error>> {
-        Poll::Ready(Ok(None))
     }
 }

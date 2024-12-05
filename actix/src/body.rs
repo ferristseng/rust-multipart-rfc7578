@@ -6,9 +6,9 @@
 // copied, modified, or distributed except according to those terms.
 //
 
+use crate::common_multipart::client::multipart;
 use actix_http::body::{BodySize, MessageBody};
 use bytes::Bytes;
-use common_multipart::client::multipart;
 use futures_core::{ready, Stream};
 use std::{
     pin::Pin,
@@ -17,7 +17,6 @@ use std::{
 
 /// Wraps a
 /// [`common_multipart::client::multipart::Body`] and makes it compatible with Actix.
-///
 pub struct Body<'a>(multipart::Body<'a>);
 
 impl<'a> From<multipart::Form<'a>> for Body<'a> {
@@ -27,7 +26,7 @@ impl<'a> From<multipart::Form<'a>> for Body<'a> {
 }
 
 impl<'a> MessageBody for Body<'a> {
-    type Error = common_multipart::client::Error;
+    type Error = crate::common_multipart::client::Error;
 
     fn size(&self) -> BodySize {
         BodySize::Stream

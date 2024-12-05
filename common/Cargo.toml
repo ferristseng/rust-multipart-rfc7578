@@ -19,7 +19,7 @@ maintenance               = { status = "passively-maintained" }
 bytes                     = "1.1"
 futures-core              = "0.3"
 futures-util              = { version = "0.3", default-features = false, features = ["io"] }
-http                      = "0.2"
+http                      = "1.1"
 mime                      = "0.3"
 mime_guess                = "2.0"
 rand                      = { version = "0.8", features = ["small_rng"] }
@@ -28,6 +28,7 @@ thiserror                 = "1.0"
 [dev-dependencies]
 actix-multipart-rfc7578   = { path = "../actix" }
 futures-util              = { version = "0.3", default-features = false, features = ["std"] }
-hyper                     = "0.14"
+hyper                     = "1.4"
 hyper-multipart-rfc7578   = { path = "../hyper" }
 tokio                     = { version = "1", features = ["macros"] }
+http-body-util            = "0.1.2"

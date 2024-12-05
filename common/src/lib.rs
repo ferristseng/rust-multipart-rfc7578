@@ -24,7 +24,7 @@
 //! and import:
 //!
 //! ```rust
-//! extern crate actix_multipart_rfc7578 as multipart;
+//! use actix_multipart_rfc7578 as multipart;
 //! ```
 //!
 //! ### Hyper:
@@ -37,9 +37,8 @@
 //! and import:
 //!
 //! ```rust
-//! extern crate hyper_multipart_rfc7578 as multipart;
+//! use hyper_multipart_rfc7578 as multipart;
 //! ```
-//!
 
 mod boundary;
 mod client_;
@@ -50,7 +49,6 @@ pub mod client {
 
     /// This module contains data structures for building a multipart/form
     /// body to send a server.
-    ///
     pub mod multipart {
         pub use crate::{
             boundary::BoundaryGenerator,

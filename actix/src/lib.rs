@@ -22,7 +22,7 @@
 //! Import the crate:
 //!
 //! ```rust
-//! extern crate actix_multipart_rfc7578 as multipart;
+//! use actix_multipart_rfc7578 as multipart;
 //! ```
 //!
 //! ## Example:
@@ -33,36 +33,35 @@
 //!
 //! #[actix_rt::main]
 //! async fn main() {
-//!   let mut form = multipart::Form::default();
+//!     let mut form = multipart::Form::default();
 //!
-//!   form.add_text("test", "Hello World");
+//!     form.add_text("test", "Hello World");
 //!
-//!   let response = Client::default()
-//!     .get("http://localhost/upload")
-//!     .content_type(form.content_type())
-//!     .send_body(multipart::Body::from(form))
-//!     .await;
+//!     let response = Client::default()
+//!         .get("http://localhost/upload")
+//!         .content_type(form.content_type())
+//!         .send_body(multipart::Body::from(form))
+//!         .await;
 //!
-//!   if let Ok(_) = response {
-//!     println!("done...");
-//!   } else {
-//!     eprintln!("an error occurred");
-//!   }
+//!     if let Ok(_) = response {
+//!         println!("done...");
+//!     } else {
+//!         eprintln!("an error occurred");
+//!     }
 //! }
 //! ```
-//!
 
 #![allow(clippy::needless_doctest_main)]
 
-extern crate common_multipart_rfc7578 as common_multipart;
+use common_multipart_rfc7578 as common_multipart;
 
 mod body;
 
 pub mod client {
-    pub use common_multipart::client::Error;
+    pub use crate::common_multipart::client::Error;
 
     pub mod multipart {
         pub use crate::body::Body;
-        pub use common_multipart::client::multipart::{BoundaryGenerator, Form};
+        pub use crate::common_multipart::client::multipart::{BoundaryGenerator, Form};
     }
 }

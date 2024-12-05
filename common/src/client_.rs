@@ -34,53 +34,44 @@ static CONTENT_DISPOSITION: HeaderName = header::CONTENT_DISPOSITION;
 static CONTENT_TYPE: HeaderName = header::CONTENT_TYPE;
 
 /// Async streamable Multipart body.
-///
 pub struct Body<'a> {
     /// The amount of data to write with each chunk.
-    ///
     buf: BytesMut,
 
     /// The active reader.
-    ///
     current: Option<Box<dyn 'a + AsyncRead + Send + Unpin>>,
 
     /// The parts as an iterator. When the iterator stops
     /// yielding, the body is fully written.
-    ///
     parts: Peekable<IntoIter<Part<'a>>>,
 
     /// The multipart boundary.
-    ///
     boundary: String,
 }
 
 impl<'a> Body<'a> {
     /// Writes a CLRF.
-    ///
     fn write_crlf(&mut self) {
-        self.buf.put_slice(&[b'\r', b'\n']);
+        self.buf.put_slice(b"\r\n");
     }
 
     /// Implements section 4.1.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
-    ///
     fn write_boundary(&mut self) {
-        self.buf.put_slice(&[b'-', b'-']);
+        self.buf.put_slice(b"--");
         self.buf.put_slice(self.boundary.as_bytes());
     }
 
     /// Writes the last form boundary.
     ///
     /// [See](https://tools.ietf.org/html/rfc2046#section-5.1).
-    ///
     fn write_final_boundary(&mut self) {
         self.write_boundary();
-        self.buf.put_slice(&[b'-', b'-']);
+        self.buf.put_slice(b"--");
     }
 
     /// Writes the Content-Disposition, and Content-Type headers.
-    ///
     fn write_headers(&mut self, part: &Part) {
         self.write_crlf();
         self.buf.put_slice(CONTENT_TYPE.as_ref());
@@ -99,7 +90,6 @@ impl<'a> Stream for Body<'a> {
     type Item = Result<BytesMut, Error>;
 
     /// Iterate over each form part, and write it out.
-    ///
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let body = self.get_mut();
 
@@ -110,7 +100,7 @@ impl<'a> Stream for Body<'a> {
                     body.write_headers(&part);
 
                     let read: Box<dyn AsyncRead + Send + Unpin> = match part.inner {
-                        Inner::Read(read, _) => Box::new(AllowStdIo::new(read)),
+                        Inner::Read(read) => Box::new(AllowStdIo::new(read)),
                         Inner::AsyncRead(read) => read,
                         Inner::Text(s) => Box::new(Cursor::new(s)),
                     };
@@ -173,20 +163,17 @@ impl<'a> Stream for Body<'a> {
 /// RFC 7578.
 ///
 /// [See](https://tools.ietf.org/html/rfc7578#section-1).
-///
 pub struct Form<'a> {
     parts: Vec<Part<'a>>,
 
     /// The auto-generated boundary as described by 4.1.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.1).
-    ///
     boundary: String,
 }
 
 impl<'a> Default for Form<'a> {
     /// Creates a new form with the default boundary generator.
-    ///
     #[inline]
     fn default() -> Form<'a> {
         Form::new::<RandomAsciiGenerator>()
@@ -214,7 +201,6 @@ impl<'a> Form<'a> {
     ///
     /// let form = multipart::Form::new::<TestGenerator>();
     /// ```
-    ///
     #[inline]
     pub fn new<G>() -> Form<'a>
     where
@@ -238,7 +224,6 @@ impl<'a> Form<'a> {
     /// form.add_text("text", "Hello World!");
     /// form.add_text("more", String::from("Hello Universe!"));
     /// ```
-    ///
     pub fn add_text<N, T>(&mut self, name: N, text: T)
     where
         N: Display,
@@ -265,7 +250,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_reader("input", bytes);
     /// ```
-    ///
     pub fn add_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
@@ -273,12 +257,8 @@ impl<'a> Form<'a> {
     {
         let read = Box::new(read);
 
-        self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
-            name,
-            None,
-            None,
-        ));
+        self.parts
+            .push(Part::new::<_, String>(Inner::Read(read), name, None, None));
     }
 
     /// Adds a readable part to the Form.
@@ -294,7 +274,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_async_reader("input", bytes);
     /// ```
-    ///
     pub fn add_async_reader<F, R>(&mut self, name: F, read: R)
     where
         F: Display,
@@ -319,9 +298,9 @@ impl<'a> Form<'a> {
     ///
     /// let mut form = multipart::Form::default();
     ///
-    /// form.add_file("file", file!()).expect("file to exist");
+    /// form.add_file("file", format!("../{}", file!()))
+    ///     .expect("file to exist");
     /// ```
-    ///
     pub fn add_file<P, F>(&mut self, name: F, path: P) -> io::Result<()>
     where
         P: AsRef<Path>,
@@ -343,7 +322,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_file_with_mime("data", "test.csv", mime::TEXT_CSV);
     /// ```
-    ///
     pub fn add_file_with_mime<P, F>(&mut self, name: F, path: P, mime: Mime) -> io::Result<()>
     where
         P: AsRef<Path>,
@@ -353,7 +331,6 @@ impl<'a> Form<'a> {
     }
 
     /// Internal method for adding a file part to the form.
-    ///
     fn _add_file<P, F>(&mut self, name: F, path: P, mime: Option<Mime>) -> io::Result<()>
     where
         P: AsRef<Path>,
@@ -362,30 +339,24 @@ impl<'a> Form<'a> {
         let f = File::open(&path)?;
         let mime = mime.or_else(|| mime_guess::from_path(&path).first());
 
-        let len = match f.metadata() {
+        // Early return if the file metadata could not be accessed. This MIGHT
+        // not be an error, if the file could be opened.
+        let meta = f.metadata()?;
+
+        if !meta.is_file() {
             // If the path is not a file, it can't be uploaded because there
             // is no content.
-            //
-            Ok(ref meta) if !meta.is_file() => Err(io::Error::new(
+
+            return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "expected a file not directory",
-            )),
-
-            // If there is some metadata on the file, try to derive some
-            // header values.
-            //
-            Ok(ref meta) => Ok(Some(meta.len())),
-
-            // The file metadata could not be accessed. This MIGHT not be an
-            // error, if the file could be opened.
-            //
-            Err(e) => Err(e),
-        }?;
+            ));
+        }
 
         let read = Box::new(f);
 
         self.parts.push(Part::new(
-            Inner::Read(read, len),
+            Inner::Read(read),
             name,
             mime,
             Some(path.as_ref().as_os_str().to_string_lossy()),
@@ -407,7 +378,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_reader_file("input", bytes, "filename.txt");
     /// ```
-    ///
     pub fn add_reader_file<F, G, R>(&mut self, name: F, read: R, filename: G)
     where
         F: Display,
@@ -417,7 +387,7 @@ impl<'a> Form<'a> {
         let read = Box::new(read);
 
         self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
+            Inner::Read(read),
             name,
             None,
             Some(filename.into()),
@@ -437,7 +407,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_async_reader_file("input", bytes, "filename.txt");
     /// ```
-    ///
     pub fn add_async_reader_file<F, G, R>(&mut self, name: F, read: R, filename: G)
     where
         F: Display,
@@ -467,7 +436,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_reader_file_with_mime("input", bytes, "filename.txt", mime::TEXT_PLAIN);
     /// ```
-    ///
     pub fn add_reader_file_with_mime<F, G, R>(&mut self, name: F, read: R, filename: G, mime: Mime)
     where
         F: Display,
@@ -477,7 +445,7 @@ impl<'a> Form<'a> {
         let read = Box::new(read);
 
         self.parts.push(Part::new::<_, String>(
-            Inner::Read(read, None),
+            Inner::Read(read),
             name,
             Some(mime),
             Some(filename.into()),
@@ -497,7 +465,6 @@ impl<'a> Form<'a> {
     ///
     /// form.add_async_reader_file_with_mime("input", bytes, "filename.txt", mime::TEXT_PLAIN);
     /// ```
-    ///
     pub fn add_async_reader_file_with_mime<F, G, R>(
         &mut self,
         name: F,
@@ -534,7 +501,6 @@ impl<'a> Form<'a> {
     /// form.add_text("text", "Hello World!");
     /// let req = form.set_body::<multipart::Body>(req_builder).unwrap();
     /// ```
-    ///
     pub fn set_body<B>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         B: From<Body<'a>>,
@@ -550,16 +516,20 @@ impl<'a> Form<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hyper::{Body, Method, Request};
+    /// use http_body_util::BodyDataStream;
+    /// use hyper::{Method, Request};
     /// use hyper_multipart_rfc7578::client::multipart;
     ///
     /// let mut req_builder = Request::post("http://localhost:80/upload");
     /// let mut form = multipart::Form::default();
     ///
     /// form.add_text("text", "Hello World!");
-    /// let req = form.set_body_convert::<hyper::Body, multipart::Body>(req_builder).unwrap();
+    /// let req = form
+    ///     .set_body_convert::<multipart::Body, multipart::Body>(req_builder)
+    ///     .unwrap();
     /// ```
-    ///
+    // Dev note: I am not sure this function is useful anymore, I could not fix the test
+    // with something besides an identity transform.
     pub fn set_body_convert<B, I>(self, req: Builder) -> Result<Request<B>, http::Error>
     where
         I: From<Body<'a>> + Into<B>,
@@ -575,7 +545,6 @@ impl<'a> Form<'a> {
 
 impl<'a> From<Form<'a>> for Body<'a> {
     /// Turns a `Form` into a multipart `Body`.
-    ///
     fn from(form: Form<'a>) -> Self {
         Body {
             buf: BytesMut::with_capacity(2048),
@@ -589,7 +558,6 @@ impl<'a> From<Form<'a>> for Body<'a> {
 /// One part of a body delimited by a boundary line.
 ///
 /// [See RFC2046 5.1](https://tools.ietf.org/html/rfc2046#section-5.1).
-///
 pub struct Part<'a> {
     inner: Inner<'a>,
 
@@ -598,13 +566,11 @@ pub struct Part<'a> {
     /// "application/octet-stream" for file data.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)
-    ///
     content_type: String,
 
     /// Each part must contain a Content-Disposition header field.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.2).
-    ///
     content_disposition: String,
 }
 
@@ -616,7 +582,6 @@ impl<'a> Part<'a> {
     /// Per [4.3](https://tools.ietf.org/html/rfc7578#section-4.3), if multiple
     /// files need to be specified for one form field, they can all be specified
     /// with the same name parameter.
-    ///
     fn new<N, F>(inner: Inner<'a>, name: N, mime: Option<Mime>, filename: Option<F>) -> Part<'a>
     where
         N: Display,
@@ -658,13 +623,11 @@ enum Inner<'a> {
     ///     Any arbitrary input stream is automatically considered a file,
     ///     and assigned the corresponding content type if not explicitly
     ///     specified.
-    ///
-    Read(Box<dyn 'a + Read + Send + Unpin>, Option<u64>),
+    Read(Box<dyn 'a + Read + Send + Unpin>),
 
     AsyncRead(Box<dyn 'a + AsyncRead + Send + Unpin>),
 
     /// The `String` variant handles "text/plain" form data payloads.
-    ///
     Text(String),
 }
 
@@ -672,10 +635,9 @@ impl<'a> Inner<'a> {
     /// Returns the default Content-Type header value as described in section 4.4.
     ///
     /// [See](https://tools.ietf.org/html/rfc7578#section-4.4)
-    ///
     fn default_content_type(&self) -> Mime {
         match *self {
-            Inner::Read(_, _) | Inner::AsyncRead(_) => mime::APPLICATION_OCTET_STREAM,
+            Inner::Read(_) | Inner::AsyncRead(_) => mime::APPLICATION_OCTET_STREAM,
             Inner::Text(_) => mime::TEXT_PLAIN,
         }
     }
